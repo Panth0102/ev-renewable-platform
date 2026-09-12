@@ -298,7 +298,7 @@ optimization/.env   ← FastAPI (DB URL, internal API key, algorithm config)
 | Frontend — theme switching (light/dark/system) | ✅ Complete |
 | Database — schema, indexes, seed, views, triggers | ✅ Complete |
 | Backend — pom.xml, config, entities, repositories | ✅ Complete |
-| Backend — services, controllers, JWT security | 🔄 In progress |
+| Backend — services, controllers, JWT security | ✅ Complete |
 | Optimization — FastAPI app, OR-Tools solver | 🔄 In progress |
 | Docker Compose — full stack | 🔄 In progress |
 
