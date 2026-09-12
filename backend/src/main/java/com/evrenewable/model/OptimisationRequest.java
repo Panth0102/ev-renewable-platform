@@ -83,7 +83,15 @@ public class OptimisationRequest {
     private String errorMessage;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
     private Instant createdAt = Instant.now();
+
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
+    }
 
     @Column(name = "completed_at")
     private Instant completedAt;

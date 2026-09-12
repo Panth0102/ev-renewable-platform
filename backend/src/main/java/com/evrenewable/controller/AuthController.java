@@ -65,4 +65,12 @@ public class AuthController {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                         "User", "email", principal.getUsername()))));
     }
+
+    @Operation(summary = "Update the current user's profile (name, email, organisation, phone)")
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateMe(
+            @Valid @RequestBody UpdateProfileRequest req,
+            @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(authService.updateProfile(principal.getUsername(), req));
+    }
 }

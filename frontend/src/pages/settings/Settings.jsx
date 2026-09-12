@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
+import api from '../../services/api.js'
 import styles from './Settings.module.css'
 
 const TOGGLE_ITEMS = [
@@ -10,15 +11,45 @@ const TOGGLE_ITEMS = [
 ]
 
 export default function Settings() {
-  const { user } = useAuth()
+  const { user, login } = useAuth()
   const { theme, setTheme } = useTheme()
-  const [saved, setSaved] = useState(false)
+
+  const [form, setForm] = useState({
+    name:         user?.name         || '',
+    email:        user?.email        || '',
+    organisation: user?.organisation || '',
+    phone:        user?.phone        || '',
+  })
+  const [saving, setSaving]   = useState(false)
+  const [saved, setSaved]     = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [toggles, setToggles] = useState({ notif: true, solar: false, report: true })
 
-  const handleSave = (e) => {
+  const handleChange = (e) =>
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+
+  const handleSave = async (e) => {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    setSaving(true)
+    setSaved(false)
+    setSaveError('')
+    try {
+      const { data } = await api.put('/v1/auth/me', {
+        name:         form.name         || undefined,
+        email:        form.email        || undefined,
+        organisation: form.organisation || undefined,
+        phone:        form.phone        || undefined,
+      })
+      // Update stored user in localStorage so AuthContext reflects new values
+      const updated = { ...user, ...data }
+      localStorage.setItem('ev_user', JSON.stringify(updated))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      setSaveError(err?.response?.data?.message || 'Failed to save changes.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const toggle = (id) => setToggles(t => ({ ...t, [id]: !t[id] }))
@@ -46,31 +77,60 @@ export default function Settings() {
           {/* avatar */}
           <div className={styles.avatarRow}>
             <div className={styles.avatar}>
-              {(user?.name || 'A').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+              {(form.name || 'A').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
             </div>
             <div>
-              <p className={styles.avatarName}>{user?.name || 'Admin'}</p>
-              <p className={styles.avatarRole}>{user?.role || 'Administrator'}</p>
+              <p className={styles.avatarName}>{form.name || user?.name || 'User'}</p>
+              <p className={styles.avatarRole}>{user?.role || 'DRIVER'}</p>
             </div>
           </div>
 
           <form className={styles.form} onSubmit={handleSave}>
             <div className={styles.formRow}>
               <div className={styles.field}>
-                <label>Full name</label>
-                <input type="text" defaultValue={user?.name || 'Admin'} placeholder="Your name" />
+                <label htmlFor="name">Full name</label>
+                <input
+                  id="name" name="name" type="text"
+                  value={form.name} onChange={handleChange}
+                  placeholder="Your name"
+                />
               </div>
               <div className={styles.field}>
-                <label>Email</label>
-                <input type="email" defaultValue={user?.email || 'admin@evrenewable.com'} placeholder="email" />
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email" name="email" type="email"
+                  value={form.email} onChange={handleChange}
+                  placeholder="you@example.com"
+                />
               </div>
             </div>
-            <div className={styles.field}>
-              <label>Organisation</label>
-              <input type="text" defaultValue="EV Renewable Ltd" placeholder="Organisation name" />
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label htmlFor="organisation">Organisation</label>
+                <input
+                  id="organisation" name="organisation" type="text"
+                  value={form.organisation} onChange={handleChange}
+                  placeholder="Organisation name"
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="phone">Phone</label>
+                <input
+                  id="phone" name="phone" type="tel"
+                  value={form.phone} onChange={handleChange}
+                  placeholder="+91 98765 43210"
+                />
+              </div>
             </div>
-            <button className={styles.saveBtn} type="submit">
-              {saved ? <><span className={styles.checkmark}>✓</span> Saved!</> : 'Save changes'}
+
+            {saveError && <p className={styles.errorHint}>{saveError}</p>}
+
+            <button className={styles.saveBtn} type="submit" disabled={saving}>
+              {saving
+                ? <><span className={styles.spinner} /> Saving…</>
+                : saved
+                ? <><span className={styles.checkmark}>✓</span> Saved!</>
+                : 'Save changes'}
             </button>
           </form>
         </div>

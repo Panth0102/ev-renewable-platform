@@ -32,13 +32,14 @@ public class AuditLog {
     @Column(name = "entity_id")
     private String entityId;
 
-    // JSONB stored as text; parse on the application side when needed
-    @Column(name = "detail", columnDefinition = "jsonb")
+    // JSONB stored as text; cast explicitly so Postgres accepts varchar → jsonb
+    @Column(name = "detail", columnDefinition = "text")
     private String detail;
 
-    @Column(name = "ip_address", columnDefinition = "inet")
+    @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
     private Instant createdAt = Instant.now();
 }

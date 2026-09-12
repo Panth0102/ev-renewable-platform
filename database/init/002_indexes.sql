@@ -50,13 +50,13 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user      ON charging_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_status    ON charging_sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sessions_started   ON charging_sessions(started_at DESC);
 -- Date-range queries (dashboard: energy today, week, month)
-CREATE INDEX IF NOT EXISTS idx_sessions_started_date ON charging_sessions(DATE(started_at));
+-- Use a plain btree on started_at; range queries on Instant work without a functional index
+CREATE INDEX IF NOT EXISTS idx_sessions_started_brin ON charging_sessions USING brin(started_at);
 
 -- ── audit_log ────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_audit_actor        ON audit_log(actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_entity       ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_created      ON audit_log(created_at DESC);
--- GIN index on JSONB detail column for flexible searching
-CREATE INDEX IF NOT EXISTS idx_audit_detail_gin   ON audit_log USING GIN(detail);
+-- Plain btree on detail text (GIN on plain text requires pg_trgm + explicit cast — skip for simplicity)
 
 SELECT 'GreenCharge indexes created successfully.' AS status;

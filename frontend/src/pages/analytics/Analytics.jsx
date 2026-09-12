@@ -4,8 +4,10 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer
 } from 'recharts'
+import { useApi } from '../../hooks/useApi.js'
 import styles from './Analytics.module.css'
 
+// ── Static chart series (no aggregate-over-time endpoint yet) ──
 const weekly = [
   { day: 'Mon', solar: 320, consumed: 410, saved: 190 },
   { day: 'Tue', solar: 280, consumed: 380, saved: 160 },
@@ -16,17 +18,6 @@ const weekly = [
   { day: 'Sun', solar: 480, consumed: 350, saved: 300 },
 ]
 
-const energyMix = [
-  { name: 'Solar',   value: 58 },
-  { name: 'Grid',    value: 32 },
-  { name: 'Battery', value: 10 },
-]
-const PIE_COLORS = ['#18B96B', '#063B32', '#7fb89e']
-
-const efficiency = [
-  { name: 'Efficiency', value: 82, fill: '#18B96B' },
-]
-
 const monthly = [
   { month: 'Jan', co2: 1.2 }, { month: 'Feb', co2: 1.5 },
   { month: 'Mar', co2: 2.1 }, { month: 'Apr', co2: 1.8 },
@@ -35,14 +26,63 @@ const monthly = [
   { month: 'Sep', co2: 2.2 },
 ]
 
-const KPI = [
-  { label: 'Total Generated',  value: '2,840',  unit: 'kWh', icon: '☀', color: '#d97706', bg: '#fffbeb' },
-  { label: 'CO₂ Saved',        value: '1.24',   unit: 't',   icon: '🌿', color: '#16a34a', bg: '#f0fdf4' },
-  { label: 'Grid Independence', value: '68',    unit: '%',   icon: '⚡', color: '#18B96B', bg: '#E8F6EF' },
-  { label: 'Avg Session',       value: '38',    unit: 'kWh', icon: '🔌', color: '#0284c7', bg: '#f0f9ff' },
-]
+const PIE_COLORS = ['#18B96B', '#063B32', '#7fb89e']
+
+function fmt(val, dec = 1) {
+  if (val == null) return '—'
+  const n = parseFloat(val)
+  return isNaN(n) ? '—' : n.toLocaleString('en-IN', { maximumFractionDigits: dec })
+}
 
 export default function Analytics() {
+  const { data: kpi, loading, error } = useApi('/v1/dashboard/kpi', null)
+
+  // Derive live values; fall back gracefully when API is unavailable
+  const solarSharePct    = kpi ? parseFloat(kpi.solarSharePct   || 0) : null
+  const co2SavedMonthKg  = kpi ? parseFloat(kpi.co2SavedMonthKg || 0) : null
+  const energyTodayKwh   = kpi ? parseFloat(kpi.energyTodayKwh  || 0) : null
+  const activeSessions   = kpi ? kpi.activeSessions : null
+
+  // Energy mix pie: solar share from live KPI, rest split between grid and battery
+  const energyMix = solarSharePct != null
+    ? [
+        { name: 'Solar',   value: Math.round(solarSharePct) },
+        { name: 'Grid',    value: Math.round((100 - solarSharePct) * 0.8) },
+        { name: 'Battery', value: Math.round((100 - solarSharePct) * 0.2) },
+      ]
+    : [
+        { name: 'Solar',   value: 58 },
+        { name: 'Grid',    value: 32 },
+        { name: 'Battery', value: 10 },
+      ]
+
+  // Efficiency radial: proxy as solarSharePct, fallback 82
+  const efficiencyValue = solarSharePct != null ? Math.round(solarSharePct) : 82
+  const efficiency = [{ name: 'Efficiency', value: efficiencyValue, fill: '#18B96B' }]
+
+  const KPI = [
+    {
+      label: 'Energy Today',
+      value: energyTodayKwh != null ? fmt(energyTodayKwh, 0) : '—',
+      unit: 'kWh', icon: '☀', color: '#d97706', bg: '#fffbeb',
+    },
+    {
+      label: 'CO₂ Saved (month)',
+      value: co2SavedMonthKg != null ? fmt(co2SavedMonthKg / 1000, 2) : '—',
+      unit: 't', icon: '🌿', color: '#16a34a', bg: '#f0fdf4',
+    },
+    {
+      label: 'Solar Share',
+      value: solarSharePct != null ? fmt(solarSharePct, 1) : '—',
+      unit: '%', icon: '⚡', color: '#18B96B', bg: '#E8F6EF',
+    },
+    {
+      label: 'Active Sessions',
+      value: activeSessions != null ? String(activeSessions) : '—',
+      unit: '', icon: '🔌', color: '#0284c7', bg: '#f0f9ff',
+    },
+  ]
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
@@ -57,7 +97,10 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* KPI strip */}
+      {loading && <p className={styles.loadingHint}>Fetching live data…</p>}
+      {error   && <p className={styles.errorHint}>Live KPIs unavailable: {error}</p>}
+
+      {/* KPI strip — live from /dashboard/kpi */}
       <div className={styles.kpiRow}>
         {KPI.map(k => (
           <div key={k.label} className={styles.kpiCard}>
@@ -93,10 +136,10 @@ export default function Analytics() {
                   </linearGradient>
                 ))}
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#d1ead9" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #c9e8d8', fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, background: 'var(--color-surface)', color: 'var(--color-text)' }} />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
               <Area type="monotone" dataKey="solar"    stroke="#18B96B" fill="url(#gS)"  strokeWidth={2} dot={false} />
               <Area type="monotone" dataKey="consumed" stroke="#063B32" fill="url(#gC)"  strokeWidth={2} dot={false} />
@@ -105,12 +148,12 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
 
-        {/* pie */}
+        {/* pie — live energy mix */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h2 className={styles.cardTitle}>Energy Source Mix</h2>
-              <p className={styles.cardSub}>Share of generation this week</p>
+              <p className={styles.cardSub}>{solarSharePct != null ? 'Live from today\'s sessions' : 'Estimated share this week'}</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
@@ -125,7 +168,7 @@ export default function Analytics() {
                   <Cell key={i} fill={PIE_COLORS[i]} />
                 ))}
               </Pie>
-              <Tooltip formatter={v => `${v}%`} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <Tooltip formatter={v => `${v}%`} contentStyle={{ borderRadius: 8, fontSize: 12, background: 'var(--color-surface)', color: 'var(--color-text)' }} />
               <Legend
                 iconType="circle" iconSize={8}
                 formatter={(val, entry) => `${val} ${entry.payload.value}%`}
@@ -148,12 +191,12 @@ export default function Analytics() {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthly} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#d1ead9" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
               <Tooltip
                 formatter={v => [`${v}t`, 'CO₂ Saved']}
-                contentStyle={{ borderRadius: 8, border: '1px solid #c9e8d8', fontSize: 12 }}
+                contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, background: 'var(--color-surface)', color: 'var(--color-text)' }}
                 cursor={{ fill: 'rgba(24,185,107,0.07)' }}
               />
               <Bar dataKey="co2" fill="#18B96B" radius={[5, 5, 0, 0]} maxBarSize={32} />
@@ -161,12 +204,12 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
 
-        {/* radial gauge */}
+        {/* radial gauge — live solar share */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
-              <h2 className={styles.cardTitle}>System Efficiency</h2>
-              <p className={styles.cardSub}>Overall renewable utilisation</p>
+              <h2 className={styles.cardTitle}>Renewable Utilisation</h2>
+              <p className={styles.cardSub}>{solarSharePct != null ? 'Live solar share today' : 'Overall renewable utilisation'}</p>
             </div>
           </div>
           <div className={styles.gaugeWrap}>
@@ -177,12 +220,12 @@ export default function Analytics() {
                 startAngle={210} endAngle={-30}
                 data={efficiency}
               >
-                <RadialBar background={{ fill: '#E8F6EF' }} dataKey="value" cornerRadius={8} />
+                <RadialBar background={{ fill: 'var(--color-border)' }} dataKey="value" cornerRadius={8} />
               </RadialBarChart>
             </ResponsiveContainer>
             <div className={styles.gaugeLabel}>
-              <span className={styles.gaugeValue}>82%</span>
-              <span className={styles.gaugeSub}>Efficient</span>
+              <span className={styles.gaugeValue}>{efficiencyValue}%</span>
+              <span className={styles.gaugeSub}>{efficiencyValue >= 70 ? 'Excellent' : efficiencyValue >= 50 ? 'Good' : 'Low'}</span>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import styles from './Auth.module.css'
 export default function Login() {
   const { login } = useAuth()
   const navigate  = useNavigate()
-  const [form, setForm]     = useState({ email: '', password: '' })
+  const [form, setForm]     = useState({ email: 'admin@evrenewable.com', password: 'admin123' })
   const [error, setError]   = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -37,6 +37,14 @@ export default function Login() {
       <p className={styles.sub}>Access your GreenCharge dashboard</p>
 
       {error && <div className={styles.error}>{error}</div>}
+
+      <div className={styles.hintBanner} style={{
+        background: '#E8F6EF', border: '1px solid #18B96B',
+        borderRadius: 8, padding: '0.6rem 0.9rem',
+        fontSize: '0.82rem', color: '#063B32', marginBottom: '0.75rem'
+      }}>
+        <strong>Demo credentials pre-filled.</strong> Just click Sign in.
+      </div>
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <div className={styles.field}>

@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS users (
   name                VARCHAR(120)    NOT NULL,
   email               VARCHAR(255)    NOT NULL UNIQUE,
   password_hash       VARCHAR(255)    NOT NULL,
-  role                user_role       NOT NULL DEFAULT 'DRIVER',
+  role                VARCHAR(20)     NOT NULL DEFAULT 'DRIVER',
   organisation        VARCHAR(120),
   phone               VARCHAR(20),
   is_active           BOOLEAN         NOT NULL DEFAULT TRUE,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS stations (
   address         TEXT,
   latitude        NUMERIC(10, 7)  NOT NULL,
   longitude       NUMERIC(10, 7)  NOT NULL,
-  status          station_status  NOT NULL DEFAULT 'ACTIVE',
+  status          VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
   total_capacity_kw NUMERIC(8,2)  NOT NULL DEFAULT 0,  -- sum of all charger limits
   operator_id     UUID            REFERENCES users(id) ON DELETE SET NULL,
   timezone        VARCHAR(60)     NOT NULL DEFAULT 'Asia/Kolkata',
@@ -112,9 +112,9 @@ CREATE TABLE IF NOT EXISTS chargers (
   id              UUID            PRIMARY KEY DEFAULT uuid_generate_v4(),
   station_id      UUID            NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
   charger_code    VARCHAR(40)     NOT NULL UNIQUE,  -- e.g. "ALPHA-01"
-  charger_type    charger_type    NOT NULL DEFAULT 'AC_FAST',
+  charger_type    VARCHAR(20)     NOT NULL DEFAULT 'AC_FAST',
   power_kw        NUMERIC(8,2)    NOT NULL,         -- max rated power
-  status          charger_status  NOT NULL DEFAULT 'AVAILABLE',
+  status          VARCHAR(20)     NOT NULL DEFAULT 'AVAILABLE',
   connector_type  VARCHAR(30),                      -- CCS2, CHAdeMO, Type2, etc.
   ocpp_id         VARCHAR(80),                      -- OCPP station ID (future)
   is_smart        BOOLEAN         NOT NULL DEFAULT TRUE,  -- supports managed charging
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   owner_id            UUID            REFERENCES users(id) ON DELETE SET NULL,
   vehicle_code        VARCHAR(40)     NOT NULL UNIQUE,  -- e.g. "V-001"
   display_name        VARCHAR(80)     NOT NULL,
-  vehicle_type        vehicle_type    NOT NULL DEFAULT 'CAR',
+  vehicle_type        VARCHAR(20)     NOT NULL DEFAULT 'CAR',
   make                VARCHAR(60),
   model               VARCHAR(60),
   battery_capacity_kwh NUMERIC(7,2)  NOT NULL,          -- total usable capacity
@@ -166,7 +166,7 @@ COMMENT ON COLUMN vehicles.current_soc IS 'Last known state of charge 0-100%';
 CREATE TABLE IF NOT EXISTS energy_signals (
   id                  BIGSERIAL       PRIMARY KEY,
   signal_time         TIMESTAMPTZ     NOT NULL,           -- hour the signal applies to
-  source              energy_source   NOT NULL DEFAULT 'MIXED',
+  source              VARCHAR(20)     NOT NULL DEFAULT 'MIXED',
   renewable_pct       NUMERIC(5,2)    NOT NULL DEFAULT 0 CHECK (renewable_pct BETWEEN 0 AND 100),
   carbon_intensity_gco2_kwh NUMERIC(8,2),                -- gCO₂/kWh
   electricity_price_per_kwh NUMERIC(8,4),                -- ₹/kWh
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS optimisation_requests (
   departure_time      TIMESTAMPTZ    NOT NULL,
 
   -- Result
-  status              opt_status     NOT NULL DEFAULT 'PENDING',
+  status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
   green_score         SMALLINT       CHECK (green_score BETWEEN 0 AND 100),
   renewable_alignment_pct NUMERIC(5,2),
   estimated_cost_inr  NUMERIC(10,2),
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS fleet_optimisation_runs (
   id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
   fleet_id        UUID        REFERENCES fleets(id) ON DELETE SET NULL,
   requested_by    UUID        REFERENCES users(id) ON DELETE SET NULL,
-  status          opt_status  NOT NULL DEFAULT 'PENDING',
+  status          VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
   station_cap_kw  NUMERIC(8,2) NOT NULL,
   peak_naive_kw   NUMERIC(8,2),
   peak_opt_kw     NUMERIC(8,2),
@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS charging_sessions (
   user_id             UUID            REFERENCES users(id) ON DELETE SET NULL,
   opt_request_id      UUID            REFERENCES optimisation_requests(id) ON DELETE SET NULL,
 
-  status              session_status  NOT NULL DEFAULT 'PENDING',
+  status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
   soc_start           NUMERIC(5,2)    CHECK (soc_start BETWEEN 0 AND 100),
   soc_end             NUMERIC(5,2)    CHECK (soc_end   BETWEEN 0 AND 100),
   energy_delivered_kwh NUMERIC(10,3),
@@ -294,12 +294,12 @@ COMMENT ON TABLE charging_sessions IS 'Individual EV charging session records wi
 
 CREATE TABLE IF NOT EXISTS audit_log (
   id          BIGSERIAL   PRIMARY KEY,
-  actor_id    UUID        REFERENCES users(id) ON DELETE SET NULL,
+  actor_id    UUID,                   -- No FK to users so deleting users preserves audit log
   action      VARCHAR(80) NOT NULL,   -- e.g. 'SESSION_START', 'STATION_UPDATE'
   entity_type VARCHAR(60),            -- e.g. 'charging_sessions'
   entity_id   TEXT,                   -- UUID or other PK as text
-  detail      JSONB,                  -- arbitrary change data
-  ip_address  INET,
+  detail      TEXT,                   -- arbitrary change data (JSON string)
+  ip_address  VARCHAR(45),            -- IPv4 or IPv6 as plain text
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

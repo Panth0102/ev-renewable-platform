@@ -7,18 +7,18 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EnergySignalRepository extends JpaRepository<EnergySignal, Long> {
 
-    // Last N hours of signals for the optimizer
+    // Signals from a point in time forward — used by the optimizer
     @Query("SELECT e FROM EnergySignal e WHERE e.signalTime >= :from ORDER BY e.signalTime ASC")
     List<EnergySignal> findFromTime(Instant from);
 
-    // Signals between a time window — used by scheduler
+    // Signals within a window — used by the greedy solver
     List<EnergySignal> findBySignalTimeBetweenOrderBySignalTimeAsc(Instant start, Instant end);
 
-    // Latest signal available
-    @Query("SELECT e FROM EnergySignal e ORDER BY e.signalTime DESC LIMIT 1")
-    EnergySignal findLatest();
+    // Latest signal available — Spring Data derived method (no JPQL LIMIT needed)
+    Optional<EnergySignal> findFirstByOrderBySignalTimeDesc();
 }
