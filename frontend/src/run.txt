@@ -1,5 +1,0 @@
-cd frontend
-npm run dev
-
-admin@evrenewable.com
-admin123

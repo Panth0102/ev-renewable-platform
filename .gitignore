@@ -2,13 +2,13 @@
 # ROOT .gitignore — covers the entire monorepo
 # ============================================================
 
-# ── Environment files (NEVER commit real .env files) ────────
+# ── Environment files (NEVER commit real .env) ───────────────
 .env
 .env.local
 .env.*.local
 !.env.example
 
-# ── OS files ─────────────────────────────────────────────────
+# ── OS ───────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
@@ -32,6 +32,8 @@ desktop.ini
 *.iws
 nbproject/
 .nb-gradle/
+*.sublime-workspace
+*.sublime-project
 
 # ── Logs ─────────────────────────────────────────────────────
 *.log
@@ -42,20 +44,21 @@ logs/
 # ── Docker runtime artefacts ─────────────────────────────────
 docker-compose.override.yml
 
-# ── SSL / TLS certs (generated locally) ──────────────────────
+# ── SSL / TLS certs ──────────────────────────────────────────
 nginx/certs/*.pem
 nginx/certs/*.crt
 nginx/certs/*.key
 nginx/certs/*.csr
 !nginx/certs/.gitkeep
 
-# ── Database backups ─────────────────────────────────────────
+# ── Database backups (generated dumps, never source SQL) ─────
 database/backups/*.sql
 database/backups/*.dump
 database/backups/*.gz
+database/backups/*.tar
 !database/backups/.gitkeep
 
-# ── Compiled / build output (catch-all for sub-dirs) ─────────
+# ── Compiled / build output ──────────────────────────────────
 **/target/
 **/dist/
 **/build/
@@ -73,3 +76,9 @@ database/backups/*.gz
 secrets/
 credentials.json
 service-account.json
+
+# ── Personal scratch files (anywhere in the repo) ────────────
+**/run.txt
+**/scratch.txt
+**/notes.txt
+**/todo.txt

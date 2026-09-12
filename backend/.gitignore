@@ -1,8 +1,8 @@
 # ============================================================
-# backend/.gitignore — Java + Spring Boot + Maven
+# backend/.gitignore — Java 11 + Spring Boot + Maven
 # ============================================================
 
-# ── Environment ──────────────────────────────────────────────
+# ── Environment (secrets live here — never commit) ───────────
 .env
 .env.local
 !.env.example
@@ -17,6 +17,7 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+# Keep the wrapper jar if you use mvnw
 .mvn/wrapper/maven-wrapper.jar
 
 # ── Compiled Java ────────────────────────────────────────────
@@ -26,13 +27,16 @@ buildNumber.properties
 *.ear
 *.nar
 hs_err_pid*
+replay_pid*
 
-# ── Spring Boot ──────────────────────────────────────────────
-# Don't commit generated spring config
+# ── Spring Boot specific ─────────────────────────────────────
 spring-shell.log
+# Local override properties (developer-specific, not for CI)
+application-local.properties
 
 # ── Logs ─────────────────────────────────────────────────────
 *.log
+*.log.*
 logs/
 !logs/.gitkeep
 
@@ -42,6 +46,7 @@ logs/
 *.ipr
 *.iws
 out/
+.idea_modules/
 
 # ── Eclipse / STS ────────────────────────────────────────────
 .classpath
@@ -50,8 +55,9 @@ out/
 .springBeans
 .sts4-cache/
 bin/
+.factorypath
 
-# ── VS Code ──────────────────────────────────────────────────
+# ── VS Code / Cursor ─────────────────────────────────────────
 .vscode/
 
 # ── OS ───────────────────────────────────────────────────────
@@ -64,3 +70,8 @@ Thumbs.db
 *.p12
 *.pem
 *.key
+
+# ── MapStruct / Lombok generated (compiled, not source) ──────
+# These are in target/ already — belt-and-braces
+generated-sources/
+generated-test-sources/

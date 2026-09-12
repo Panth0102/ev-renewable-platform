@@ -1,5 +1,5 @@
 # ============================================================
-# optimization/.gitignore — Python + FastAPI
+# optimization/.gitignore — Python 3.14 + FastAPI
 # ============================================================
 
 # ── Environment ──────────────────────────────────────────────
@@ -11,7 +11,6 @@
 venv/
 .venv/
 env/
-.env/
 ENV/
 env.bak/
 venv.bak/
@@ -45,6 +44,7 @@ coverage.xml
 *.coveragerc
 nosetests.xml
 test-results/
+.tox/
 
 # ── Type checking ────────────────────────────────────────────
 .mypy_cache/
@@ -52,8 +52,9 @@ test-results/
 dmypy.json
 .pyre/
 .pytype/
+.ruff_cache/
 
-# ── Jupyter notebooks (if used for analysis) ─────────────────
+# ── Jupyter / analysis ───────────────────────────────────────
 .ipynb_checkpoints/
 *.ipynb
 
@@ -72,7 +73,7 @@ logs/
 .DS_Store
 Thumbs.db
 
-# ── Model artefacts (ML weights / serialised objects) ────────
+# ── ML / model artefacts ─────────────────────────────────────
 *.pkl
 *.pickle
 *.joblib
@@ -80,3 +81,8 @@ Thumbs.db
 *.pt
 *.pth
 models/*.bin
+
+# ── OR-Tools solver output ───────────────────────────────────
+*.pb
+*.pbtxt
+solver_output/
