@@ -3,12 +3,12 @@ import { useAuth } from '../context/AuthContext.jsx'
 import styles from './DashboardLayout.module.css'
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard',       icon: '▦', section: null },
-  { to: '/stations',  label: 'Stations',         icon: '⚡', section: null },
-  { to: '/charging',  label: 'Charge Request',   icon: '🔋', section: 'GreenCharge' },
-  { to: '/fleet',     label: 'Fleet',            icon: '🚌', section: null },
-  { to: '/analytics', label: 'Analytics',        icon: '↗', section: 'Insights' },
-  { to: '/settings',  label: 'Settings',         icon: '⚙', section: null },
+  { to: '/dashboard', label: 'Dashboard',      section: null },
+  { to: '/stations',  label: 'Stations',        section: null },
+  { to: '/charging',  label: 'Charge Request',  section: 'GreenCharge' },
+  { to: '/fleet',     label: 'Fleet',           section: null },
+  { to: '/analytics', label: 'Analytics',       section: 'Insights' },
+  { to: '/settings',  label: 'Settings',        section: null },
 ]
 
 export default function DashboardLayout() {
@@ -25,22 +25,19 @@ export default function DashboardLayout() {
       <aside className={styles.sidebar}>
         {/* brand */}
         <div className={styles.brand}>
-          <div className={styles.brandIcon}>⚡</div>
+          <div className={styles.brandIcon}>GC</div>
           <div className={styles.brandText}>
-            <span className={styles.brandName}>EV Renewable</span>
+            <span className={styles.brandName}>GreenCharge</span>
             <span className={styles.brandTag}>Platform</span>
           </div>
         </div>
 
         {/* nav */}
         <nav className={styles.nav}>
-          <span className={styles.navSection}>Menu</span>
-          {NAV.map(({ to, label, icon, section }) => (
+          {NAV.map(({ to, label, section }) => (
             <div key={to}>
               {section && (
-                <span className={styles.navSection} style={{ marginTop: '0.75rem' }}>
-                  {section}
-                </span>
+                <span className={styles.navSection}>{section}</span>
               )}
               <NavLink
                 to={to}
@@ -48,9 +45,7 @@ export default function DashboardLayout() {
                   `${styles.navItem} ${isActive ? styles.active : ''}`
                 }
               >
-                <span className={styles.navIcon}>{icon}</span>
                 <span className={styles.navLabel}>{label}</span>
-                <span className={styles.navChevron}>›</span>
               </NavLink>
             </div>
           ))}
@@ -69,7 +64,7 @@ export default function DashboardLayout() {
             title="Logout"
             aria-label="Logout"
           >
-            ⏻
+            Out
           </button>
         </div>
       </aside>
@@ -77,17 +72,15 @@ export default function DashboardLayout() {
       {/* topbar + content */}
       <div className={styles.body}>
         <header className={styles.topbar}>
-          <div className={styles.topbarLeft}>
-            <span className={styles.topbarGreeting}>
-              Good {getTimeOfDay()},&nbsp;<strong>{user?.name || 'Admin'}</strong>
-            </span>
-          </div>
+          <span className={styles.topbarGreeting}>
+            Good {getTimeOfDay()}, <strong>{user?.name || 'Admin'}</strong>
+          </span>
           <div className={styles.topbarRight}>
             <div className={styles.liveChip}>
               <span className={styles.liveDot} />
               Live
             </div>
-            <div className={styles.topbarDate}>{formatDate()}</div>
+            <span className={styles.topbarDate}>{formatDate()}</span>
           </div>
         </header>
         <main className={styles.content}>

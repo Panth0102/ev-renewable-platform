@@ -1,15 +1,10 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import api from '../services/api.js'
 
 const AuthContext = createContext(null)
 
-// ── Prefill admin user so the app is usable without a backend ──
-const MOCK_ADMIN = {
-  id: 1,
-  name: 'Admin',
-  email: 'admin@evrenewable.com',
-  role: 'ADMIN',
-}
-const MOCK_CREDENTIALS = { email: 'admin@evrenewable.com', password: 'admin123' }
+const TOKEN_KEY         = import.meta.env.VITE_TOKEN_KEY         || 'ev_access_token'
+const REFRESH_TOKEN_KEY = import.meta.env.VITE_REFRESH_TOKEN_KEY || 'ev_refresh_token'
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -21,36 +16,40 @@ export function AuthProvider({ children }) {
     }
   })
 
+  // ── Login — calls POST /api/v1/auth/login ────────────────
   const login = useCallback(async (email, password) => {
-    // ── Mock login — bypass backend until it is ready ──
-    if (
-      email === MOCK_CREDENTIALS.email &&
-      password === MOCK_CREDENTIALS.password
-    ) {
-      localStorage.setItem('ev_access_token', 'mock-jwt-token')
-      localStorage.setItem('ev_user', JSON.stringify(MOCK_ADMIN))
-      setUser(MOCK_ADMIN)
-      return { user: MOCK_ADMIN, token: 'mock-jwt-token' }
+    const { data } = await api.post('/v1/auth/login', { email, password })
+    localStorage.setItem(TOKEN_KEY, data.accessToken)
+    if (data.refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken)
     }
-    // ── Real backend login (uncomment when backend is ready) ──
-    // const { data } = await api.post('/auth/login', { email, password })
-    // localStorage.setItem(import.meta.env.VITE_TOKEN_KEY || 'ev_access_token', data.token)
-    // localStorage.setItem('ev_user', JSON.stringify(data.user))
-    // setUser(data.user)
-    // return data
-
-    throw new Error('Invalid credentials')
+    localStorage.setItem('ev_user', JSON.stringify(data.user))
+    setUser(data.user)
+    return data
   }, [])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('ev_access_token')
-    localStorage.removeItem('ev_refresh_token')
-    localStorage.removeItem('ev_user')
-    setUser(null)
+  // ── Register — calls POST /api/v1/auth/register ──────────
+  const register = useCallback(async (name, email, password) => {
+    const { data } = await api.post('/v1/auth/register', { name, email, password })
+    return data
+  }, [])
+
+  // ── Logout ───────────────────────────────────────────────
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/v1/auth/logout')
+    } catch {
+      // best-effort — clear local state regardless
+    } finally {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      localStorage.removeItem('ev_user')
+      setUser(null)
+    }
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: Boolean(user) }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: Boolean(user) }}>
       {children}
     </AuthContext.Provider>
   )

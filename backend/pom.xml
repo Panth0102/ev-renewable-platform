@@ -26,7 +26,6 @@
   <properties>
     <java.version>11</java.version>
     <jjwt.version>0.11.5</jjwt.version>
-    <mapstruct.version>1.5.5.Final</mapstruct.version>
     <springdoc.version>1.7.0</springdoc.version>
   </properties>
 
@@ -96,13 +95,6 @@
       <optional>true</optional>
     </dependency>
 
-    <!-- ── MapStruct (DTO ↔ Entity mapping) ── -->
-    <dependency>
-      <groupId>org.mapstruct</groupId>
-      <artifactId>mapstruct</artifactId>
-      <version>${mapstruct.version}</version>
-    </dependency>
-
     <!-- ── SpringDoc / Swagger UI ── -->
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -150,7 +142,7 @@
         </configuration>
       </plugin>
 
-      <!-- Compiler: wire Lombok + MapStruct annotation processors -->
+      <!-- Compiler: Lombok annotation processor only (MapStruct removed — unused) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -162,11 +154,6 @@
               <groupId>org.projectlombok</groupId>
               <artifactId>lombok</artifactId>
               <version>${lombok.version}</version>
-            </path>
-            <path>
-              <groupId>org.mapstruct</groupId>
-              <artifactId>mapstruct-processor</artifactId>
-              <version>${mapstruct.version}</version>
             </path>
           </annotationProcessorPaths>
         </configuration>

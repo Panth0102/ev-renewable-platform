@@ -1,6 +1,5 @@
 .page { display: flex; flex-direction: column; gap: 1.6rem; }
 
-/* page header */
 .pageHeader {
   display: flex;
   align-items: flex-start;
@@ -8,36 +7,40 @@
   flex-wrap: wrap;
   gap: 1rem;
 }
+
 .heading {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
   letter-spacing: -0.02em;
 }
+
 .subheading {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   margin-top: 0.2rem;
 }
+
 .headerBadge {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   background: var(--color-accent-light);
-  border: 1px solid #b6e8cc;
-  border-radius: 999px;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.78rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.77rem;
   font-weight: 600;
   color: var(--color-accent);
-  white-space: nowrap;
 }
+
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.badgeDot {
-  width: 7px; height: 7px;
+.liveDot {
+  width: 6px; height: 6px;
   background: var(--color-accent);
   border-radius: 50%;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 /* KPI grid */
@@ -51,55 +54,45 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1.3rem 1.4rem;
+  padding: 1.25rem 1.4rem;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-.statCard:hover {
-  box-shadow: var(--shadow);
-  transform: translateY(-2px);
 }
 
-.statTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .statLabel {
-  font-size: 0.78rem;
+  font-size: 0.77rem;
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.statIconWrap {
-  width: 34px; height: 34px;
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
-}
+
 .statValue {
-  font-size: 2.1rem;
-  font-weight: 800;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
   letter-spacing: -0.03em;
   line-height: 1;
 }
+
 .statUnit {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   margin-left: 2px;
+  color: var(--color-text-muted);
 }
+
 .statChange {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.78rem;
+  gap: 0.25rem;
+  font-size: 0.77rem;
 }
-.upArrow   { color: #16a34a; font-size: 0.8rem; }
-.downArrow { color: #e53e3e; font-size: 0.8rem; }
+
+.upArrow   { color: #16a34a; font-weight: 700; }
+.downArrow { color: #e53e3e; font-weight: 700; }
 .changeGreen  { color: #16a34a; }
 .changeRed    { color: #e53e3e; }
 .changeMuted  { color: var(--color-text-muted); }
@@ -119,35 +112,38 @@
   padding: 1.4rem;
   box-shadow: var(--shadow-sm);
 }
+
 .chartHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.1rem;
+  margin-bottom: 1rem;
   gap: 0.5rem;
 }
+
 .chartTitle {
-  font-size: 0.97rem;
+  font-size: 0.93rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-text);
 }
+
 .chartSub {
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   margin-top: 0.15rem;
 }
+
 .chartBadge {
   font-size: 0.7rem;
   font-weight: 600;
   background: var(--color-accent-light);
   color: var(--color-accent);
-  border: 1px solid #b6e8cc;
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
   white-space: nowrap;
 }
 
-/* custom tooltip */
 .tooltip {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -156,16 +152,18 @@
   box-shadow: var(--shadow);
   font-size: 0.8rem;
 }
+
 .tooltipLabel {
   font-weight: 600;
-  color: var(--color-primary);
-  margin-bottom: 0.35rem;
+  color: var(--color-text);
+  margin-bottom: 0.3rem;
 }
+
 .tooltipRow {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  font-size: 0.78rem;
+  font-size: 0.77rem;
 }
 
 /* activity */
@@ -176,34 +174,52 @@
   padding: 1.4rem;
   box-shadow: var(--shadow-sm);
 }
+
 .activityList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  margin-top: 0.9rem;
+  margin-top: 0.85rem;
 }
+
 .activityItem {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding: 0.7rem 0;
+  padding: 0.65rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 .activityItem:last-child { border-bottom: none; }
+
 .activityDot {
-  width: 32px; height: 32px;
-  border-radius: 9px;
+  width: 30px; height: 30px;
+  border-radius: var(--radius-sm);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   flex-shrink: 0;
 }
-.activityText {
+
+.activityBody {
   flex: 1;
-  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.activityLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--color-text);
 }
+
+.activityText {
+  font-size: 0.77rem;
+  color: var(--color-text-muted);
+}
+
 .activityTime {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   color: var(--color-text-faint);
   white-space: nowrap;
 }

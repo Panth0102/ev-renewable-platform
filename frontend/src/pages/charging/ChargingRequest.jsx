@@ -1,101 +1,136 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import api from '../../services/api.js'
+import { useApi } from '../../hooks/useApi.js'
 import styles from './ChargingRequest.module.css'
-
-// Simulate the optimization engine output
-function runOptimizer(form) {
-  const socNeeded = form.targetSoc - form.currentSoc          // % to fill
-  const batteryKwh = (socNeeded / 100) * form.batteryCapacity  // kWh required
-  const hoursAvail = form.departureHour - new Date().getHours()
-  const safeHours = Math.max(hoursAvail, 2)
-
-  // Renewable availability curve (0-23h), peaks midday
-  const renewableCurve = [
-    0, 0, 0, 0, 5, 10, 25, 45, 65, 82, 90, 95,
-    95, 88, 78, 65, 45, 25, 10, 5, 2, 0, 0, 0,
-  ]
-
-  // Build hourly schedule — prefer high-renewable windows
-  const now = new Date().getHours()
-  const hours = []
-  for (let h = now; h < form.departureHour; h++) {
-    hours.push({ hour: h, renewable: renewableCurve[h % 24] })
-  }
-  // Sort by renewable desc to find best windows
-  const sorted = [...hours].sort((a, b) => b.renewable - a.renewable)
-
-  // Assign charging power per slot (max charger limit kW)
-  const slotSize = 1 // 1 hour slots
-  let remaining = batteryKwh
-  const schedule = hours.map(h => ({ ...h, power: 0 }))
-
-  for (const best of sorted) {
-    if (remaining <= 0) break
-    const idx = schedule.findIndex(s => s.hour === best.hour)
-    const power = Math.min(form.chargerLimit, remaining / slotSize)
-    schedule[idx].power = Math.round(power * 10) / 10
-    remaining -= power * slotSize
-  }
-
-  // Compute metrics
-  const totalCharged = schedule.reduce((s, h) => s + h.power, 0)
-  const weightedRenewable = schedule.reduce((s, h) => s + h.power * h.renewable, 0)
-  const renewableAlignment = totalCharged > 0 ? Math.round(weightedRenewable / totalCharged) : 0
-  const estimatedCost = Math.round(totalCharged * 8.5)   // ₹8.5/kWh avg
-  const estimatedCo2 = Math.round(totalCharged * (1 - renewableAlignment / 100) * 0.82 * 10) / 10
-  const greenScore = Math.min(100, Math.round(
-    renewableAlignment * 0.5 +
-    (1 - estimatedCo2 / (batteryKwh * 0.82)) * 30 +
-    (safeHours > 4 ? 20 : 10)
-  ))
-
-  // Best window label
-  const bestSlots = schedule.filter(s => s.power > 0).sort((a, b) => b.renewable - a.renewable)
-  const bestStart = bestSlots[0]?.hour ?? now
-  const bestEnd = (bestSlots[bestSlots.length - 1]?.hour ?? now) + 1
-  const fmt = h => `${String(h % 24).padStart(2, '0')}:00`
-
-  return {
-    schedule: schedule.map(s => ({
-      label: fmt(s.hour),
-      power: s.power,
-      renewable: s.renewable,
-    })),
-    renewableAlignment,
-    estimatedCost,
-    estimatedCo2,
-    greenScore,
-    bestWindow: `${fmt(bestStart)} – ${fmt(bestEnd)}`,
-    totalKwh: Math.round(totalCharged * 10) / 10,
-  }
-}
 
 const SCORE_COLOR = (s) => s >= 80 ? '#18B96B' : s >= 60 ? '#d97706' : '#e53e3e'
 
-export default function ChargingRequest() {
-  const [form, setForm] = useState({
-    currentSoc: 35,
-    targetSoc: 90,
-    batteryCapacity: 60,
-    departureHour: 7,
-    chargerLimit: 22,
-  })
+// Poll an optimisation request until COMPLETED or FAILED
+function usePollOptimisation(requestId) {
   const [result, setResult] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [polling, setPolling] = useState(false)
+  const timerRef = useRef(null)
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: Number(v) }))
+  useEffect(() => {
+    if (!requestId) return
+    setPolling(true)
 
-  const handleSubmit = (e) => {
+    const poll = async () => {
+      try {
+        const { data } = await api.get(`/v1/optimise/${requestId}`)
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          setResult(data)
+          setPolling(false)
+        } else {
+          timerRef.current = setTimeout(poll, 1500)
+        }
+      } catch {
+        setPolling(false)
+      }
+    }
+
+    timerRef.current = setTimeout(poll, 800)
+    return () => clearTimeout(timerRef.current)
+  }, [requestId])
+
+  return { result, polling }
+}
+
+// Shape backend OptimisationResponse into the chart/display format
+function shapeResult(data) {
+  if (!data || data.status === 'FAILED') return null
+
+  const slots = (data.slots || []).map(s => ({
+    label: new Date(s.slotStart).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    power: parseFloat(s.powerKw) || 0,
+    renewable: parseFloat(s.renewablePct) || 0,
+  }))
+
+  const bestStart = data.bestWindowStart
+    ? new Date(data.bestWindowStart).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : '—'
+  const bestEnd = data.bestWindowEnd
+    ? new Date(data.bestWindowEnd).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : '—'
+
+  return {
+    schedule:           slots,
+    renewableAlignment: Math.round(parseFloat(data.renewableAlignmentPct) || 0),
+    estimatedCost:      Math.round(parseFloat(data.estimatedCostInr) || 0),
+    estimatedCo2:       Math.round((parseFloat(data.estimatedCo2Kg) || 0) * 10) / 10,
+    greenScore:         data.greenScore ?? 0,
+    bestWindow:         `${bestStart} – ${bestEnd}`,
+    totalKwh:           Math.round((parseFloat(data.totalEnergyKwh) || 0) * 10) / 10,
+    status:             data.status,
+    errorMessage:       data.errorMessage,
+  }
+}
+
+export default function ChargingRequest() {
+  const { data: vehicles = [] } = useApi('/v1/vehicles', [])
+  const { data: stations = [] } = useApi('/v1/stations', [])
+
+  const [form, setForm] = useState({
+    vehicleId:          '',
+    stationId:          '',
+    currentSoc:         35,
+    targetSoc:          90,
+    batteryCapacityKwh: 60,
+    chargerLimitKw:     22,
+    departureTime:      '',
+  })
+
+  const [submitting, setSubmitting]     = useState(false)
+  const [submitError, setSubmitError]   = useState('')
+  const [optimiseId, setOptimiseId]     = useState(null)
+
+  const { result: rawResult, polling } = usePollOptimisation(optimiseId)
+  const result = rawResult ? shapeResult(rawResult) : null
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  // Default departureTime to 7 hours from now when component loads
+  useEffect(() => {
+    const d = new Date(Date.now() + 7 * 3600 * 1000)
+    d.setSeconds(0, 0)
+    setForm(f => ({ ...f, departureTime: d.toISOString().slice(0, 16) }))
+  }, [])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
-    setResult(null)
-    // Simulate async call to optimizer
-    setTimeout(() => {
-      setResult(runOptimizer(form))
-      setLoading(false)
-    }, 900)
+    setSubmitError('')
+    setOptimiseId(null)
+
+    if (!form.vehicleId) { setSubmitError('Select a vehicle.'); return }
+    if (Number(form.targetSoc) <= Number(form.currentSoc)) {
+      setSubmitError('Target SOC must be greater than current SOC.')
+      return
+    }
+    if (!form.departureTime) { setSubmitError('Set a departure time.'); return }
+
+    setSubmitting(true)
+    try {
+      const payload = {
+        vehicleId:          form.vehicleId,
+        stationId:          form.stationId || undefined,
+        currentSoc:         Number(form.currentSoc),
+        targetSoc:          Number(form.targetSoc),
+        batteryCapacityKwh: Number(form.batteryCapacityKwh),
+        chargerLimitKw:     Number(form.chargerLimitKw),
+        // Backend expects ISO 8601 Instant string
+        departureTime:      new Date(form.departureTime).toISOString(),
+      }
+      const { data } = await api.post('/v1/optimise', payload)
+      setOptimiseId(data.id)
+    } catch (err) {
+      setSubmitError(err?.response?.data?.message || 'Submission failed. Check backend connection.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
+  const loading = submitting || polling
   const scoreColor = result ? SCORE_COLOR(result.greenScore) : '#18B96B'
 
   return (
@@ -103,9 +138,7 @@ export default function ChargingRequest() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.heading}>Charging Request</h1>
-          <p className={styles.sub}>
-            Submit your EV details and get an optimised charging schedule
-          </p>
+          <p className={styles.sub}>Submit your EV details and get an optimised charging schedule</p>
         </div>
         <span className={styles.badge}>🤖 AI Optimised</span>
       </div>
@@ -113,6 +146,43 @@ export default function ChargingRequest() {
       <div className={styles.layout}>
         {/* ── LEFT — form ── */}
         <div className={styles.formCard}>
+
+          {/* Vehicle selector */}
+          <div className={styles.formSection}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionNum}>00</span> Vehicle
+            </h2>
+            <div className={styles.field}>
+              <label>Select vehicle</label>
+              <select value={form.vehicleId} onChange={e => {
+                const v = vehicles.find(x => x.id === e.target.value)
+                set('vehicleId', e.target.value)
+                if (v) {
+                  set('batteryCapacityKwh', v.batteryCapacityKwh)
+                  set('chargerLimitKw', v.maxChargeRateKw)
+                  set('currentSoc', parseFloat(v.currentSoc) || 0)
+                }
+              }}>
+                <option value="">— choose vehicle —</option>
+                {vehicles.map(v => (
+                  <option key={v.id} value={v.id}>
+                    {v.displayName} ({v.vehicleCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.field}>
+              <label>Station (optional)</label>
+              <select value={form.stationId} onChange={e => set('stationId', e.target.value)}>
+                <option value="">— any station —</option>
+                {stations.map(s => (
+                  <option key={s.id} value={s.id}>{s.name} — {s.city}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* SOC */}
           <div className={styles.formSection}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionNum}>01</span> EV State
@@ -129,7 +199,7 @@ export default function ChargingRequest() {
               <div className={styles.field}>
                 <label>Target SOC (%)</label>
                 <div className={styles.sliderWrap}>
-                  <input type="range" min={form.currentSoc + 1} max={100} value={form.targetSoc}
+                  <input type="range" min={Number(form.currentSoc) + 1} max={100} value={form.targetSoc}
                     onChange={e => set('targetSoc', e.target.value)} />
                   <span className={styles.sliderVal}>{form.targetSoc}%</span>
                 </div>
@@ -137,26 +207,17 @@ export default function ChargingRequest() {
             </div>
             <div className={styles.socBar}>
               <div className={styles.socFill}
-                style={{ width: `${form.currentSoc}%`, background: '#d97706' }}
-                title={`Current: ${form.currentSoc}%`}
-              />
+                style={{ width: `${form.currentSoc}%`, background: '#d97706' }} />
               <div className={styles.socTarget}
-                style={{
-                  left: `${form.currentSoc}%`,
-                  width: `${form.targetSoc - form.currentSoc}%`,
-                }}
-                title={`To charge: ${form.targetSoc - form.currentSoc}%`}
-              />
+                style={{ left: `${form.currentSoc}%`, width: `${form.targetSoc - form.currentSoc}%` }} />
             </div>
             <div className={styles.socLegend}>
               <span><span className={styles.dot} style={{ background: '#d97706' }} />Current {form.currentSoc}%</span>
               <span><span className={styles.dot} style={{ background: '#18B96B' }} />Target {form.targetSoc}%</span>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
-                Need: {form.targetSoc - form.currentSoc}%
-              </span>
             </div>
           </div>
 
+          {/* Vehicle & Charger */}
           <div className={styles.formSection}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionNum}>02</span> Vehicle &amp; Charger
@@ -164,48 +225,42 @@ export default function ChargingRequest() {
             <div className={styles.fieldRow}>
               <div className={styles.field}>
                 <label>Battery Capacity (kWh)</label>
-                <input type="number" min={10} max={200} value={form.batteryCapacity}
-                  onChange={e => set('batteryCapacity', e.target.value)} />
+                <input type="number" min={10} max={200} value={form.batteryCapacityKwh}
+                  onChange={e => set('batteryCapacityKwh', e.target.value)} />
               </div>
               <div className={styles.field}>
                 <label>Charger Limit (kW)</label>
-                <input type="number" min={3} max={350} value={form.chargerLimit}
-                  onChange={e => set('chargerLimit', e.target.value)} />
+                <input type="number" min={3} max={350} value={form.chargerLimitKw}
+                  onChange={e => set('chargerLimitKw', e.target.value)} />
               </div>
             </div>
           </div>
 
+          {/* Departure */}
           <div className={styles.formSection}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionNum}>03</span> Departure
             </h2>
             <div className={styles.field}>
-              <label>Departure time (hour, 0–23)</label>
-              <div className={styles.sliderWrap}>
-                <input type="range" min={new Date().getHours() + 1} max={23}
-                  value={form.departureHour}
-                  onChange={e => set('departureHour', e.target.value)} />
-                <span className={styles.sliderVal}>
-                  {String(form.departureHour).padStart(2, '0')}:00
-                </span>
-              </div>
+              <label>Departure date &amp; time</label>
+              <input
+                type="datetime-local"
+                value={form.departureTime}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={e => set('departureTime', e.target.value)}
+              />
             </div>
           </div>
 
-          <div className={styles.hardConstraint}>
-            <span>⚠</span>
-            <span>
-              <strong>HARD CONSTRAINT</strong> — Schedule will always reach target SOC before departure.
-            </span>
-          </div>
+          {submitError && <p className={styles.errorHint}>{submitError}</p>}
 
           <button
             className={styles.submitBtn}
             onClick={handleSubmit}
-            disabled={loading || form.targetSoc <= form.currentSoc}
+            disabled={loading}
           >
             {loading
-              ? <><span className={styles.spinner} /> Optimising…</>
+              ? <><span className={styles.spinner} /> {polling ? 'Optimising…' : 'Submitting…'}</>
               : '⚡ Get Optimal Schedule'}
           </button>
         </div>
@@ -223,12 +278,21 @@ export default function ChargingRequest() {
           {loading && (
             <div className={styles.emptyState}>
               <div className={styles.loadingRing} />
-              <p className={styles.emptyTitle}>Running optimisation…</p>
+              <p className={styles.emptyTitle}>
+                {polling ? 'Running optimisation…' : 'Submitting request…'}
+              </p>
               <p className={styles.emptySub}>Balancing renewable availability, cost and grid load</p>
             </div>
           )}
 
-          {result && (
+          {result?.status === 'FAILED' && (
+            <div className={styles.emptyState}>
+              <p className={styles.emptyTitle} style={{ color: '#e53e3e' }}>Optimisation failed</p>
+              <p className={styles.emptySub}>{result.errorMessage || 'Please try again.'}</p>
+            </div>
+          )}
+
+          {result && result.status === 'COMPLETED' && (
             <>
               {/* Green Score hero */}
               <div className={styles.scoreCard}>
@@ -279,41 +343,42 @@ export default function ChargingRequest() {
               </div>
 
               {/* Charging schedule chart */}
-              <div className={styles.chartCard}>
-                <div className={styles.chartHeader}>
-                  <div>
-                    <h3 className={styles.chartTitle}>Recommended Charging Window</h3>
-                    <p className={styles.chartSub}>Charging power (kW) vs hour — green = renewable %</p>
+              {result.schedule.length > 0 && (
+                <div className={styles.chartCard}>
+                  <div className={styles.chartHeader}>
+                    <div>
+                      <h3 className={styles.chartTitle}>Recommended Charging Window</h3>
+                      <p className={styles.chartSub}>Charging power (kW) vs hour — green = renewable %</p>
+                    </div>
                   </div>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={result.schedule} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                        axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                        axisLine={false} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, background: 'var(--color-surface)', color: 'var(--color-text)' }}
+                        formatter={(val, name) => [
+                          name === 'power' ? `${val} kW` : `${val}%`,
+                          name === 'power' ? 'Charging Power' : 'Renewable',
+                        ]}
+                      />
+                      <Bar dataKey="power" radius={[5, 5, 0, 0]} maxBarSize={32}>
+                        {result.schedule.map((s, i) => (
+                          <Cell key={i}
+                            fill={s.power > 0
+                              ? `rgba(24,185,107,${0.4 + (s.renewable / 200)})`
+                              : 'var(--color-border)'}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={result.schedule} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
-                      axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
-                      axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, background: 'var(--color-surface)', color: 'var(--color-text)' }}
-                      formatter={(val, name) => [
-                        name === 'power' ? `${val} kW` : `${val}%`,
-                        name === 'power' ? 'Charging Power' : 'Renewable',
-                      ]}
-                    />
-                    <Bar dataKey="power" radius={[5, 5, 0, 0]} maxBarSize={32}>
-                      {result.schedule.map((s, i) => (
-                        <Cell key={i}
-                          fill={s.power > 0
-                            ? `rgba(24,185,107,${0.4 + (s.renewable / 200)})`
-                            : 'var(--color-border)'}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              )}
 
-              {/* Outcome tags */}
               <div className={styles.outcomeRow}>
                 {['✓ On-time charging', '↓ Cost', '↓ Estimated Emissions', '↑ Renewable Alignment'].map(o => (
                   <span key={o} className={styles.outcomeTag}>{o}</span>

@@ -5,10 +5,9 @@ import styles from './Auth.module.css'
 
 export default function Login() {
   const { login } = useAuth()
-  const navigate = useNavigate()
-  // Prefilled with mock admin credentials
-  const [form, setForm] = useState({ email: 'admin@evrenewable.com', password: 'admin123' })
-  const [error, setError] = useState('')
+  const navigate  = useNavigate()
+  const [form, setForm]     = useState({ email: '', password: '' })
+  const [error, setError]   = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
 
@@ -22,8 +21,11 @@ export default function Login() {
     try {
       await login(form.email, form.password)
       navigate('/dashboard')
-    } catch {
-      setError('Invalid email or password. Use the prefilled credentials below.')
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+        'Invalid email or password.'
+      )
     } finally {
       setLoading(false)
     }
@@ -31,37 +33,19 @@ export default function Login() {
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.topLabel}>Welcome back</div>
-      <h2 className={styles.heading}>Sign in to your account</h2>
-      <p className={styles.sub}>Monitor your EV stations and energy data</p>
+      <h2 className={styles.heading}>Sign in</h2>
+      <p className={styles.sub}>Access your GreenCharge dashboard</p>
 
-      <div className={styles.hintBanner}>
-        <span className={styles.hintIcon}>🔑</span>
-        <div>
-          <span className={styles.hintTitle}>Demo credentials are prefilled</span>
-          <span className={styles.hintText}> — just click Sign in</span>
-        </div>
-      </div>
-
-      {error && (
-        <div className={styles.error}>
-          <span>⚠</span> {error}
-        </div>
-      )}
+      {error && <div className={styles.error}>{error}</div>}
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <div className={styles.field}>
-          <label htmlFor="email">Email address</label>
+          <label htmlFor="email">Email</label>
           <div className={styles.inputWrap}>
-            <span className={styles.inputIcon}>✉</span>
             <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={handleChange}
+              id="email" name="email" type="email"
+              autoComplete="email" required
+              value={form.email} onChange={handleChange}
               placeholder="you@example.com"
             />
           </div>
@@ -70,24 +54,19 @@ export default function Login() {
         <div className={styles.field}>
           <label htmlFor="password">Password</label>
           <div className={styles.inputWrap}>
-            <span className={styles.inputIcon}>🔒</span>
             <input
-              id="password"
-              name="password"
+              id="password" name="password"
               type={showPass ? 'text' : 'password'}
-              autoComplete="current-password"
-              required
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
+              autoComplete="current-password" required
+              value={form.password} onChange={handleChange}
+              placeholder="Password"
             />
             <button
-              type="button"
-              className={styles.eyeBtn}
+              type="button" className={styles.eyeBtn}
               onClick={() => setShowPass(v => !v)}
               aria-label={showPass ? 'Hide password' : 'Show password'}
             >
-              {showPass ? '🙈' : '👁'}
+              {showPass ? 'Hide' : 'Show'}
             </button>
           </div>
         </div>
@@ -95,12 +74,12 @@ export default function Login() {
         <button className={styles.btn} type="submit" disabled={loading}>
           {loading
             ? <><span className={styles.spinner} /> Signing in…</>
-            : 'Sign in →'}
+            : 'Sign in'}
         </button>
       </form>
 
       <p className={styles.switch}>
-        No account? <Link to="/register">Create one</Link>
+        No account? <Link to="/register">Register</Link>
       </p>
     </div>
   )

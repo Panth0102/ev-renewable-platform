@@ -2,7 +2,7 @@ import { Outlet, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import styles from './AuthLayout.module.css'
 
-const PILLS = ['Solar Powered', 'Smart Routing', 'Real-time Analytics', 'Fleet Ready']
+const TAGS = ['Solar Powered', 'Smart Routing', 'Real-time Analytics', 'Fleet Ready']
 
 export default function AuthLayout() {
   const { isAuthenticated } = useAuth()
@@ -10,30 +10,29 @@ export default function AuthLayout() {
 
   return (
     <div className={styles.wrapper}>
-      {/* ── Left branding panel ── */}
+      {/* Left panel */}
       <div className={styles.left}>
         <div className={styles.brandMark}>
-          <div className={styles.logoCircle}>⚡</div>
-          <span className={styles.brandName}>EV Renewable</span>
+          <div className={styles.logoBlock}>GC</div>
+          <span className={styles.brandName}>GreenCharge</span>
         </div>
 
         <div className={styles.heroText}>
           <h1 className={styles.heroTitle}>
-            Power the future<br />with <span>smart energy</span>
+            Smarter EV charging,<br />less grid stress.
           </h1>
           <p className={styles.heroSub}>
-            Manage EV charging stations, track renewable energy consumption,
-            and optimise your fleet — all from one dashboard.
+            GreenCharge schedules EV charging around renewable availability,
+            grid conditions, and driver departure times.
           </p>
-          <div className={styles.pillRow}>
-            {PILLS.map(p => <span key={p} className={styles.pill}>{p}</span>)}
+          <div className={styles.tagRow}>
+            {TAGS.map(t => <span key={t} className={styles.tag}>{t}</span>)}
           </div>
         </div>
 
-        {/* decorative stat strip */}
         <div className={styles.statStrip}>
           <div className={styles.stripStat}>
-            <span className={styles.stripVal}>12+</span>
+            <span className={styles.stripVal}>12</span>
             <span className={styles.stripLabel}>Active Stations</span>
           </div>
           <div className={styles.stripDivider} />
@@ -49,7 +48,7 @@ export default function AuthLayout() {
         </div>
       </div>
 
-      {/* ── Right form panel ── */}
+      {/* Right panel */}
       <div className={styles.right}>
         <div className={styles.card}>
           <Outlet />

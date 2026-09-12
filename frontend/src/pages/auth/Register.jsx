@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import api from '../../services/api.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 import styles from './Auth.module.css'
 
 export default function Register() {
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
-  const [error, setError] = useState('')
+  const { register } = useAuth()
+  const navigate     = useNavigate()
+  const [form, setForm]       = useState({ name: '', email: '', password: '' })
+  const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
 
@@ -18,10 +19,13 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/auth/register', form)
+      await register(form.name, form.email, form.password)
       navigate('/login')
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Backend not connected yet.')
+      setError(
+        err?.response?.data?.message ||
+        'Registration failed. Please try again.'
+      )
     } finally {
       setLoading(false)
     }
@@ -29,21 +33,15 @@ export default function Register() {
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.topLabel}>Get started</div>
-      <h2 className={styles.heading}>Create your account</h2>
-      <p className={styles.sub}>Join the EV Renewable Platform</p>
+      <h2 className={styles.heading}>Create account</h2>
+      <p className={styles.sub}>Register for GreenCharge</p>
 
-      {error && (
-        <div className={styles.error}>
-          <span>⚠</span> {error}
-        </div>
-      )}
+      {error && <div className={styles.error}>{error}</div>}
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <div className={styles.field}>
           <label htmlFor="name">Full name</label>
           <div className={styles.inputWrap}>
-            <span className={styles.inputIcon}>👤</span>
             <input
               id="name" name="name" type="text"
               autoComplete="name" required
@@ -54,9 +52,8 @@ export default function Register() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="email">Email address</label>
+          <label htmlFor="email">Email</label>
           <div className={styles.inputWrap}>
-            <span className={styles.inputIcon}>✉</span>
             <input
               id="email" name="email" type="email"
               autoComplete="email" required
@@ -69,7 +66,6 @@ export default function Register() {
         <div className={styles.field}>
           <label htmlFor="password">Password</label>
           <div className={styles.inputWrap}>
-            <span className={styles.inputIcon}>🔒</span>
             <input
               id="password" name="password"
               type={showPass ? 'text' : 'password'}
@@ -82,7 +78,7 @@ export default function Register() {
               onClick={() => setShowPass(v => !v)}
               aria-label={showPass ? 'Hide password' : 'Show password'}
             >
-              {showPass ? '🙈' : '👁'}
+              {showPass ? 'Hide' : 'Show'}
             </button>
           </div>
         </div>
@@ -90,7 +86,7 @@ export default function Register() {
         <button className={styles.btn} type="submit" disabled={loading}>
           {loading
             ? <><span className={styles.spinner} /> Creating account…</>
-            : 'Create account →'}
+            : 'Create account'}
         </button>
       </form>
 
