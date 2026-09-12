@@ -3,6 +3,7 @@ package com.evrenewable.service;
 import com.evrenewable.dto.request.LoginRequest;
 import com.evrenewable.dto.request.RefreshTokenRequest;
 import com.evrenewable.dto.request.RegisterRequest;
+import com.evrenewable.dto.request.UpdateProfileRequest;
 import com.evrenewable.dto.response.AuthResponse;
 import com.evrenewable.dto.response.UserResponse;
 import com.evrenewable.exception.ConflictException;
@@ -148,6 +149,39 @@ public class AuthService {
                 .expiresIn(accessTokenExpiryMs / 1000)
                 .user(UserResponse.from(user))
                 .build();
+    }
+
+    // ── Update profile ───────────────────────────────────────
+    @Transactional
+    public UserResponse updateProfile(String currentEmail, UpdateProfileRequest req) {
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentEmail));
+
+        // Only update fields that were provided (non-null)
+        if (req.getName() != null && !req.getName().isBlank()) {
+            user.setName(req.getName().trim());
+        }
+        if (req.getEmail() != null && !req.getEmail().isBlank()) {
+            String newEmail = req.getEmail().toLowerCase().trim();
+            if (!newEmail.equals(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+                throw new ConflictException("Email already in use: " + newEmail);
+            }
+            user.setEmail(newEmail);
+        }
+        if (req.getOrganisation() != null) {
+            user.setOrganisation(req.getOrganisation().trim());
+        }
+        if (req.getPhone() != null) {
+            user.setPhone(req.getPhone().trim());
+        }
+
+        user = userRepository.save(user);
+        log.info("Profile updated for: {}", user.getEmail());
+
+        auditLogService.record(user.getId(), "PROFILE_UPDATE", "User",
+                user.getId().toString(), "{\"email\":\"" + user.getEmail() + "\"}");
+
+        return UserResponse.from(user);
     }
 
     // ── Logout ───────────────────────────────────────────────

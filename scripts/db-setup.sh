@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # ============================================================
 # GreenCharge — One-command database setup
 #

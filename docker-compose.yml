@@ -1,0 +1,134 @@
+version: "3.9"
+
+# ============================================================
+# GreenCharge — Full Stack Docker Compose
+# Services: db · backend · optimization · frontend (nginx)
+#
+# Usage:
+#   docker compose up --build          # foreground
+#   docker compose up --build -d       # detached
+#   docker compose down -v             # stop + wipe DB volume
+# ============================================================
+
+x-restart-policy: &restart-policy
+  restart: unless-stopped
+
+# ── Shared healthcheck defaults ───────────────────────────────
+x-healthcheck-defaults: &hc-defaults
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+services:
+
+  # ──────────────────────────────────────────────────────────
+  # PostgreSQL 15
+  # ──────────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    <<: *restart-policy
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-ev_renewable_db}
+      POSTGRES_USER:     ${POSTGRES_USER:-ev_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ev_secure_pass_2026}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # Docker initdb picks up .sh and .sql files alphabetically.
+      # We use a shell wrapper (000_init.sh) so it can call psql -f
+      # on 000_master.sql with relative \ir paths resolved correctly.
+      - ./database:/docker-entrypoint-initdb.d/db
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ev_user} -d ${POSTGRES_DB:-ev_renewable_db}"]
+
+  # ──────────────────────────────────────────────────────────
+  # Spring Boot Backend
+  # ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    <<: *restart-policy
+    depends_on:
+      db:
+        condition: service_healthy
+      optimization:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE:         prod
+      DB_HOST:                        db
+      DB_PORT:                        5432
+      DB_NAME:                        ${POSTGRES_DB:-ev_renewable_db}
+      DB_USERNAME:                    ${POSTGRES_USER:-ev_user}
+      DB_PASSWORD:                    ${POSTGRES_PASSWORD:-ev_secure_pass_2026}
+      JWT_SECRET:                     ${JWT_SECRET:-change_me_generate_a_256bit_random_secret_here}
+      JWT_EXPIRATION_MS:              ${JWT_EXPIRATION_MS:-86400000}
+      JWT_REFRESH_EXPIRATION_MS:      ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      CORS_ALLOWED_ORIGINS:           ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:80}
+      OPTIMIZATION_SERVICE_URL:       http://optimization:8001
+      OPTIMIZATION_CONNECT_TIMEOUT_MS: ${OPTIMIZATION_CONNECT_TIMEOUT_MS:-5000}
+      OPTIMIZATION_READ_TIMEOUT_MS:   ${OPTIMIZATION_READ_TIMEOUT_MS:-15000}
+      ASYNC_CORE_POOL_SIZE:           ${ASYNC_CORE_POOL_SIZE:-4}
+      ASYNC_MAX_POOL_SIZE:            ${ASYNC_MAX_POOL_SIZE:-8}
+      ASYNC_QUEUE_CAPACITY:           ${ASYNC_QUEUE_CAPACITY:-50}
+      SERVER_PORT:                    8080
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health | grep -q UP"]
+    volumes:
+      - backend_logs:/app/logs
+
+  # ──────────────────────────────────────────────────────────
+  # FastAPI Optimization Engine
+  # ──────────────────────────────────────────────────────────
+  optimization:
+    build:
+      context: ./optimization
+      dockerfile: Dockerfile
+    <<: *restart-policy
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL:     postgresql+asyncpg://${POSTGRES_USER:-ev_user}:${POSTGRES_PASSWORD:-ev_secure_pass_2026}@db:5432/${POSTGRES_DB:-ev_renewable_db}
+      DATABASE_SYNC_URL: postgresql://${POSTGRES_USER:-ev_user}:${POSTGRES_PASSWORD:-ev_secure_pass_2026}@db:5432/${POSTGRES_DB:-ev_renewable_db}
+      BACKEND_API_URL:  http://backend:8080/api
+      CORS_ORIGINS:     http://localhost,http://localhost:80,http://backend:8080
+      ENV:              production
+      WORKERS:          2
+      LOG_LEVEL:        INFO
+    ports:
+      - "${OPTIMIZATION_PORT:-8001}:8001"
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health"]
+    volumes:
+      - optimization_logs:/app/logs
+
+  # ──────────────────────────────────────────────────────────
+  # Nginx — serves React SPA + reverse-proxies API traffic
+  # ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    <<: *restart-policy
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost/health"]
+      start_period: 10s
+
+volumes:
+  pg_data:
+  backend_logs:
+  optimization_logs:

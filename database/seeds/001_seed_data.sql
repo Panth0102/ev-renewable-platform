@@ -8,12 +8,16 @@
 SET client_min_messages = WARNING;
 
 -- ── Users ────────────────────────────────────────────────────
--- Passwords are bcrypt of: admin123 / operator123 / driver123
+-- Passwords (bcrypt rounds=12):
+--   admin@evrenewable.com  → admin123
+--   priya@evrenewable.com  → operator123
+--   rahul@driver.com       → driver123
+--   ananya@driver.com      → driver123
 INSERT INTO users (id, name, email, password_hash, role, organisation, is_active, email_verified) VALUES
-  ('00000000-0000-0000-0000-000000000001', 'Admin',          'admin@evrenewable.com',    '$2a$12$placeholder_admin_hash',    'ADMIN',    'GreenCharge HQ',     TRUE, TRUE),
-  ('00000000-0000-0000-0000-000000000002', 'Priya Sharma',   'priya@evrenewable.com',    '$2a$12$placeholder_operator_hash', 'OPERATOR', 'GreenCharge HQ',     TRUE, TRUE),
-  ('00000000-0000-0000-0000-000000000003', 'Rahul Verma',    'rahul@driver.com',         '$2a$12$placeholder_driver_hash',   'DRIVER',   NULL,                 TRUE, TRUE),
-  ('00000000-0000-0000-0000-000000000004', 'Ananya Patel',   'ananya@driver.com',        '$2a$12$placeholder_driver_hash',   'DRIVER',   NULL,                 TRUE, TRUE)
+  ('00000000-0000-0000-0000-000000000001', 'Admin',        'admin@evrenewable.com', '$2b$12$/uXhAWligVszaWrFgYSTz.mzGe/r7mK6ItReOesXRVmllAak.KTMi', 'ADMIN',    'GreenCharge HQ', TRUE, TRUE),
+  ('00000000-0000-0000-0000-000000000002', 'Priya Sharma', 'priya@evrenewable.com', '$2b$12$R06w9RVOb0kiFHiQPW0PveBgeu80zthngIo6lCHqzzHeM3QBRTM1O', 'OPERATOR', 'GreenCharge HQ', TRUE, TRUE),
+  ('00000000-0000-0000-0000-000000000003', 'Rahul Verma',  'rahul@driver.com',      '$2b$12$wgveyUMwJ2Q73PBPb/I3KOAkvAhd7CuVbFQ6SwsVtIGZ2NnWyY5qq', 'DRIVER',   NULL,             TRUE, TRUE),
+  ('00000000-0000-0000-0000-000000000004', 'Ananya Patel', 'ananya@driver.com',     '$2b$12$wgveyUMwJ2Q73PBPb/I3KOAkvAhd7CuVbFQ6SwsVtIGZ2NnWyY5qq', 'DRIVER',   NULL,             TRUE, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 -- ── Stations ─────────────────────────────────────────────────

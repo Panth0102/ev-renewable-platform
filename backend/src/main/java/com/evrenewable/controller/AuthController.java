@@ -3,6 +3,7 @@ package com.evrenewable.controller;
 import com.evrenewable.dto.request.LoginRequest;
 import com.evrenewable.dto.request.RefreshTokenRequest;
 import com.evrenewable.dto.request.RegisterRequest;
+import com.evrenewable.dto.request.UpdateProfileRequest;
 import com.evrenewable.dto.response.ApiResponse;
 import com.evrenewable.dto.response.AuthResponse;
 import com.evrenewable.dto.response.UserResponse;
