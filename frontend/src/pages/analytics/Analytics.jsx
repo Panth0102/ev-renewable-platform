@@ -1,0 +1,192 @@
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  RadialBarChart, RadialBar,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer
+} from 'recharts'
+import styles from './Analytics.module.css'
+
+const weekly = [
+  { day: 'Mon', solar: 320, consumed: 410, saved: 190 },
+  { day: 'Tue', solar: 280, consumed: 380, saved: 160 },
+  { day: 'Wed', solar: 410, consumed: 430, saved: 240 },
+  { day: 'Thu', solar: 390, consumed: 400, saved: 220 },
+  { day: 'Fri', solar: 460, consumed: 470, saved: 280 },
+  { day: 'Sat', solar: 500, consumed: 380, saved: 320 },
+  { day: 'Sun', solar: 480, consumed: 350, saved: 300 },
+]
+
+const energyMix = [
+  { name: 'Solar',   value: 58 },
+  { name: 'Grid',    value: 32 },
+  { name: 'Battery', value: 10 },
+]
+const PIE_COLORS = ['#18B96B', '#063B32', '#7fb89e']
+
+const efficiency = [
+  { name: 'Efficiency', value: 82, fill: '#18B96B' },
+]
+
+const monthly = [
+  { month: 'Jan', co2: 1.2 }, { month: 'Feb', co2: 1.5 },
+  { month: 'Mar', co2: 2.1 }, { month: 'Apr', co2: 1.8 },
+  { month: 'May', co2: 2.4 }, { month: 'Jun', co2: 2.9 },
+  { month: 'Jul', co2: 3.1 }, { month: 'Aug', co2: 2.7 },
+  { month: 'Sep', co2: 2.2 },
+]
+
+const KPI = [
+  { label: 'Total Generated',  value: '2,840',  unit: 'kWh', icon: '☀', color: '#d97706', bg: '#fffbeb' },
+  { label: 'CO₂ Saved',        value: '1.24',   unit: 't',   icon: '🌿', color: '#16a34a', bg: '#f0fdf4' },
+  { label: 'Grid Independence', value: '68',    unit: '%',   icon: '⚡', color: '#18B96B', bg: '#E8F6EF' },
+  { label: 'Avg Session',       value: '38',    unit: 'kWh', icon: '🔌', color: '#0284c7', bg: '#f0f9ff' },
+]
+
+export default function Analytics() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.heading}>Analytics</h1>
+          <p className={styles.sub}>Energy performance and environmental impact</p>
+        </div>
+        <div className={styles.periodRow}>
+          {['7D', '30D', '90D', '1Y'].map((p, i) => (
+            <button key={p} className={`${styles.periodBtn} ${i === 1 ? styles.periodActive : ''}`}>{p}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI strip */}
+      <div className={styles.kpiRow}>
+        {KPI.map(k => (
+          <div key={k.label} className={styles.kpiCard}>
+            <span className={styles.kpiIcon} style={{ background: k.bg, color: k.color }}>{k.icon}</span>
+            <div>
+              <div className={styles.kpiValue} style={{ color: k.color }}>
+                {k.value}<span className={styles.kpiUnit}>{k.unit}</span>
+              </div>
+              <div className={styles.kpiLabel}>{k.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* row 1 */}
+      <div className={styles.row}>
+        {/* weekly area */}
+        <div className={`${styles.card} ${styles.wide}`}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Weekly Energy (kWh)</h2>
+              <p className={styles.cardSub}>Solar generated vs consumed vs cost saved</p>
+            </div>
+            <span className={styles.cardBadge}>This Week</span>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={weekly} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+              <defs>
+                {[['gS','#18B96B'],['gC','#063B32'],['gSv','#d97706']].map(([id, c]) => (
+                  <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={c} stopOpacity={0.22} />
+                    <stop offset="95%" stopColor={c} stopOpacity={0}    />
+                  </linearGradient>
+                ))}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#d1ead9" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #c9e8d8', fontSize: 12 }} />
+              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+              <Area type="monotone" dataKey="solar"    stroke="#18B96B" fill="url(#gS)"  strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="consumed" stroke="#063B32" fill="url(#gC)"  strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="saved"    stroke="#d97706" fill="url(#gSv)" strokeWidth={2} dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* pie */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Energy Source Mix</h2>
+              <p className={styles.cardSub}>Share of generation this week</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={energyMix}
+                cx="50%" cy="50%"
+                innerRadius={58} outerRadius={88}
+                paddingAngle={4} dataKey="value"
+              >
+                {energyMix.map((_, i) => (
+                  <Cell key={i} fill={PIE_COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={v => `${v}%`} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <Legend
+                iconType="circle" iconSize={8}
+                formatter={(val, entry) => `${val} ${entry.payload.value}%`}
+                wrapperStyle={{ fontSize: 12 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* row 2 */}
+      <div className={styles.row}>
+        {/* CO2 bar */}
+        <div className={`${styles.card} ${styles.wide}`}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>CO₂ Saved Monthly (tonnes)</h2>
+              <p className={styles.cardSub}>Carbon offset through renewable EV charging</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthly} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#d1ead9" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#3d7a65' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={v => [`${v}t`, 'CO₂ Saved']}
+                contentStyle={{ borderRadius: 8, border: '1px solid #c9e8d8', fontSize: 12 }}
+                cursor={{ fill: 'rgba(24,185,107,0.07)' }}
+              />
+              <Bar dataKey="co2" fill="#18B96B" radius={[5, 5, 0, 0]} maxBarSize={32} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* radial gauge */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>System Efficiency</h2>
+              <p className={styles.cardSub}>Overall renewable utilisation</p>
+            </div>
+          </div>
+          <div className={styles.gaugeWrap}>
+            <ResponsiveContainer width="100%" height={180}>
+              <RadialBarChart
+                cx="50%" cy="55%"
+                innerRadius="65%" outerRadius="90%"
+                startAngle={210} endAngle={-30}
+                data={efficiency}
+              >
+                <RadialBar background={{ fill: '#E8F6EF' }} dataKey="value" cornerRadius={8} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div className={styles.gaugeLabel}>
+              <span className={styles.gaugeValue}>82%</span>
+              <span className={styles.gaugeSub}>Efficient</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
