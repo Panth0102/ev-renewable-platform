@@ -11,7 +11,7 @@ GreenCharge is a renewable-aware EV charging platform built for **HackOut '26** 
 EVs typically charge immediately at full power the moment they plug in — without any awareness of grid conditions or renewable availability. This causes:
 
 - **Missed renewable windows** — charging peaks when solar/wind are lowest
-- **Grid stress** — uncoordinated demand spikes during already loaded periods  
+- **Grid stress** — uncoordinated demand spikes during already loaded periods
 - **Higher cost** — charging at peak-price hours unnecessarily
 
 EV charging is *flexible demand*. The opportunity is to shift it intelligently.
@@ -33,8 +33,8 @@ Station Capacity         ──┘                        + CO₂ Estimate
 
 **Outputs per schedule:**
 - ✓ On-time charging — target SOC met before departure (hard constraint)
-- ↓ Estimated cost
-- ↓ Estimated emissions
+- ↓ Estimated cost (using live per-kWh price from energy signals)
+- ↓ Estimated emissions (kg CO₂)
 - ↑ Renewable alignment %
 - Green Score (0–100)
 
@@ -47,7 +47,7 @@ Station Capacity         ──┘                        + CO₂ Estimate
 | Frontend | React + Vite | 18 / 5 |
 | Backend API | Spring Boot + Hibernate | 2.7.18 / Java 11 |
 | Database | PostgreSQL | 15 |
-| Optimization Engine | Python + FastAPI | 3.14 / 0.141 |
+| Optimization Engine | Python + FastAPI | 3.11+ / 0.141 |
 | Auth | Spring Security + JWT (jjwt) | 0.11.5 |
 | Charts | Recharts | 2.x |
 | Maps | Leaflet + OpenStreetMap | 1.9 |
@@ -65,39 +65,51 @@ ev-renewable-platform/
 ├── frontend/                   React + Vite UI
 │   ├── src/
 │   │   ├── pages/
-│   │   │   ├── auth/           Login, Register
-│   │   │   ├── dashboard/      KPI cards, energy mix charts
-│   │   │   ├── stations/       Leaflet map + station list
-│   │   │   ├── charging/       SOC form → Green Score + schedule
-│   │   │   ├── fleet/          Multi-vehicle optimisation
+│   │   │   ├── auth/           Login, Register  (real JWT auth)
+│   │   │   ├── dashboard/      Live KPI cards from /api/v1/dashboard/kpi
+│   │   │   ├── stations/       Leaflet map + live station list from API
+│   │   │   ├── charging/       Vehicle/station selector → async optimisation + polling
+│   │   │   ├── fleet/          Fleet selector → fleet optimisation + polling
 │   │   │   ├── analytics/      Area, pie, bar, radial charts
 │   │   │   └── settings/       Profile, notifications, theme
-│   │   ├── context/            AuthContext, ThemeContext (light/dark/system)
+│   │   ├── context/            AuthContext (real login/register/logout), ThemeContext
+│   │   ├── hooks/              useApi (data fetching with loading/error state)
 │   │   ├── layouts/            AuthLayout, DashboardLayout
-│   │   └── services/           Axios API client
+│   │   └── services/           Axios client with JWT attach + token-refresh interceptor
 │   └── .env.example
 │
 ├── backend/                    Spring Boot REST API
 │   ├── src/main/java/com/evrenewable/
-│   │   ├── model/              JPA Entities (11 tables)
-│   │   ├── repository/         Spring Data JPA Repositories
-│   │   ├── service/            Business logic (in progress)
-│   │   ├── controller/         REST endpoints (in progress)
-│   │   ├── security/           JWT filter + Spring Security (in progress)
-│   │   └── config/             CORS, Swagger, Security config (in progress)
-│   ├── src/main/resources/
-│   │   ├── application.properties
-│   │   ├── application-dev.properties
-│   │   └── application-prod.properties
+│   │   ├── model/              13 JPA entities (UUID PKs, JPA auditing)
+│   │   ├── repository/         11 Spring Data JPA repositories
+│   │   ├── service/            AuthService, ChargingSessionService, OptimisationService,
+│   │   │                       FleetOptimisationService, StationService, VehicleService,
+│   │   │                       DashboardService, AuditLogService, AsyncOptimisationRunner
+│   │   ├── controller/         AuthController, StationController, VehicleController,
+│   │   │                       ChargingSessionController, OptimisationController,
+│   │   │                       FleetOptimisationController, DashboardController
+│   │   ├── security/           JwtAuthFilter, JwtAuthEntryPoint, UserDetailsServiceImpl
+│   │   └── config/             SecurityConfig (JWT + CORS), AppConfig (RestTemplate with
+│   │                           timeouts), AsyncConfig (bounded thread pool), CorsConfig
 │   └── .env.example
 │
 ├── optimization/               Python FastAPI optimization engine
 │   ├── app/
-│   │   ├── main.py             FastAPI entry point (in progress)
-│   │   ├── algorithms/         OR-Tools constraint solver (in progress)
-│   │   ├── api/routes/         /optimize, /fleet-optimize (in progress)
-│   │   ├── schemas/            Pydantic request/response models (in progress)
-│   │   └── services/           Scheduling logic (in progress)
+│   │   ├── main.py             FastAPI app — CORS, lifespan, route registration
+│   │   ├── config.py           Pydantic settings from .env
+│   │   ├── db.py               Async SQLAlchemy engine + get_db dependency
+│   │   ├── algorithms/
+│   │   │   └── greedy_optimizer.py   Renewable-first greedy scheduler
+│   │   ├── api/routes/
+│   │   │   ├── optimize.py     POST /optimize  (called by Spring AsyncOptimisationRunner)
+│   │   │   └── health.py       GET /health, GET /health/db
+│   │   ├── models/
+│   │   │   └── energy_signal.py      SQLAlchemy ORM (read-only mirror of energy_signals)
+│   │   ├── schemas/
+│   │   │   └── optimize.py     OptimizeRequest / OptimizeResponse / ScheduleSlot
+│   │   └── services/
+│   │       └── optimize_service.py   Fetches signals from DB, runs optimizer
+│   ├── tests/unit/             10 passing unit tests (no DB required)
 │   ├── requirements.txt
 │   └── .env.example
 │
@@ -130,7 +142,7 @@ ev-renewable-platform/
 | Table | Purpose |
 |---|---|
 | `users` | Platform users — ADMIN / OPERATOR / DRIVER |
-| `refresh_tokens` | JWT refresh token store |
+| `refresh_tokens` | JWT refresh token store (SHA-256 hashed — raw token never persists) |
 | `stations` | Physical charging locations with GPS |
 | `chargers` | Charger units per station (AC slow/fast, DC fast/ultra) |
 | `fleets` | Vehicle groups for fleet optimisation |
@@ -141,9 +153,9 @@ ev-renewable-platform/
 | `fleet_optimisation_runs` | Multi-vehicle fleet scheduling runs |
 | `fleet_vehicle_schedules` | Per-vehicle hourly slots from fleet runs |
 | `charging_sessions` | Actual session records with energy, cost, CO₂ metrics |
-| `audit_log` | Immutable audit trail (JSONB detail, IP) |
+| `audit_log` | Immutable audit trail (JSONB detail, IP, no FK to users) |
 
-**Views:** `v_station_summary`, `v_dashboard_kpi`  
+**Views:** `v_station_summary`, `v_dashboard_kpi`
 **Triggers:** Auto `updated_at` on all mutable tables
 
 ---
@@ -199,7 +211,7 @@ psql -U ev_user -d ev_renewable_db -f database/init/000_master.sql
 cd backend
 mvn clean install -DskipTests
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
-# API at http://localhost:8080
+# API at    http://localhost:8080
 # Swagger at http://localhost:8080/swagger-ui.html
 ```
 
@@ -207,9 +219,10 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ```bash
 cd optimization
-source venv/bin/activate          # venv already created with all packages
+source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 # Docs at http://localhost:8001/docs
+# Health at http://localhost:8001/health
 ```
 
 ### 6 — Frontend
@@ -232,16 +245,121 @@ docker compose up --build
 
 ---
 
-## Demo Credentials
+## API Overview
 
-The frontend uses mock auth until the backend auth endpoints are wired up.
+### Auth — `/api/v1/auth`
 
-| Field | Value |
-|---|---|
-| Email | `admin@evrenewable.com` |
-| Password | `admin123` |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/register` | Public | Register new user |
+| POST | `/login` | Public | Login → `accessToken` + `refreshToken` |
+| POST | `/refresh` | Public | Exchange refresh token for new tokens |
+| POST | `/logout` | JWT | Revoke all refresh tokens |
+| GET | `/me` | JWT | Get current user profile |
 
-These are pre-filled on the login page — just click **Sign in →**.
+### Stations — `/api/v1/stations`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/` | JWT | List all active stations with chargers |
+| GET | `/{id}` | JWT | Get station by ID |
+| POST | `/` | ADMIN/OPERATOR | Create station |
+| PATCH | `/{id}/status` | ADMIN/OPERATOR | Update station status |
+| GET | `/{id}/chargers` | JWT | List chargers for a station |
+| POST | `/{id}/chargers` | ADMIN/OPERATOR | Add charger to station |
+| PATCH | `/chargers/{id}/status` | ADMIN/OPERATOR | Update charger status |
+
+### Vehicles — `/api/v1/vehicles`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/` | JWT | List all vehicles |
+| GET | `/{id}` | JWT | Get vehicle by ID |
+| GET | `/fleet/{fleetId}` | JWT | List vehicles in a fleet |
+| POST | `/` | JWT | Register new vehicle |
+| PATCH | `/{id}/soc` | JWT | Update vehicle state-of-charge |
+
+### Charging Sessions — `/api/v1/sessions`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/active` | JWT | Get all active sessions |
+| GET | `/{id}` | JWT | Get session by ID |
+| GET | `/vehicle/{vehicleId}` | JWT | Sessions for a vehicle |
+| GET | `/station/{stationId}` | JWT | Sessions for a station |
+| POST | `/start` | JWT | Start a charging session |
+| POST | `/{id}/stop` | JWT | Stop session + record metrics (JSON body) |
+
+### Optimisation — `/api/v1/optimise`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/` | JWT | Submit optimisation → returns immediately with `status: PENDING` |
+| GET | `/{id}` | JWT | Poll result — status: PENDING → RUNNING → COMPLETED/FAILED |
+| GET | `/vehicle/{vehicleId}` | JWT | Optimisation history for a vehicle |
+
+### Fleet Optimisation — `/api/v1/fleet-optimise`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/` | JWT | Submit fleet run (fleetId + stationCapKw + departureTime) |
+| GET | `/{id}` | JWT | Poll result |
+| GET | `/fleet/{fleetId}` | JWT | Fleet optimisation history |
+
+### Dashboard — `/api/v1/dashboard`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/kpi` | JWT | Live KPIs: active stations, sessions, energy today, solar share %, CO₂ saved |
+
+### Optimization Service — `http://localhost:8001`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Liveness probe |
+| GET | `/health/db` | DB connectivity check |
+| POST | `/optimize` | Run greedy renewable-first optimizer (called internally by Spring) |
+| GET | `/docs` | Interactive Swagger UI |
+
+---
+
+## Optimization Workflow
+
+```
+01  EV Request       current SOC · target SOC · battery kWh · departure · charger limit
+         ↓
+02  Spring submits   POST /api/v1/optimise → saves PENDING record, fires async task
+         ↓
+03  AsyncRunner      calls FastAPI POST /optimize  (5 s connect / 15 s read timeout)
+         ↓  (if FastAPI down or times out → falls back to built-in Java greedy solver)
+04  FastAPI          reads energy_signals from DB for the departure window
+                     sorts slots by renewable_pct desc, allocates power greedily
+                     returns green_score, cost (using per-signal price), CO₂, slots[]
+         ↓
+05  Spring saves     COMPLETED record with all result fields
+         ↓
+06  Frontend polls   GET /api/v1/optimise/{id} every 1.5 s until COMPLETED or FAILED
+         ↓
+07  UI renders       Green Score ring, best window, cost, CO₂, per-hour bar chart
+```
+
+> **Driver deadline = hard constraint** — the schedule always reaches the target SOC before departure.
+
+---
+
+## Key Design Decisions
+
+**Async optimisation** — `POST /optimise` returns immediately with `status: PENDING`. The heavy work runs in a bounded Spring `ThreadPoolTaskExecutor` (`async-opt-*` threads, 4 core / 8 max). The frontend polls `GET /optimise/{id}` until done. This means the HTTP request never blocks waiting for the optimizer.
+
+**FastAPI fallback** — If the Python service is unreachable or returns an error, `AsyncOptimisationRunner` transparently falls back to a built-in Java greedy solver. The caller always gets a result.
+
+**Refresh token rotation** — On every `/refresh` call the old token is revoked and a new one issued. Only SHA-256 hashes of tokens are stored — raw tokens never touch the database.
+
+**Audit trail** — `AuditLogService` writes asynchronously in a `REQUIRES_NEW` transaction. A log-write failure never rolls back the business operation. The `audit_log` table has no FK to `users` so deleting a user doesn't erase their history.
+
+**Green score formula** — Single-EV session: `0.7 × renewablePct + 0.3 × savingsRatio`. Optimisation request: `renewableAlignment × 0.6 + timeBufferBonus (20 or 10) + 10 base`, capped at 100.
+
+**Cost calculation** — Uses `electricity_price_per_kwh` from `energy_signals` when available; falls back to ₹8.5/kWh average.
 
 ---
 
@@ -249,31 +367,14 @@ These are pre-filled on the login page — just click **Sign in →**.
 
 | Route | Description |
 |---|---|
-| `/login` | Auth with pre-filled demo credentials |
-| `/dashboard` | KPI cards, energy mix area chart, station activity bar chart, recent activity feed |
-| `/stations` | Leaflet map with 5 Indian cities + expandable station list |
-| `/charging` | SOC sliders → optimizer → Green Score ring, recommended window chart, cost/CO₂ estimate |
-| `/fleet` | Vehicle table → run fleet optimisation → naive vs optimised load comparison chart |
-| `/analytics` | Weekly energy area chart, energy source pie, CO₂ saved bar chart, radial efficiency gauge |
-| `/settings` | Profile form, notification toggles, **working light/dark/system theme switcher** |
-
----
-
-## Optimization Workflow
-
-```
-01  EV Request      current SOC · target SOC · battery kWh · departure · charger limit
-        ↓
-02  Energy Signals  renewable % · carbon intensity · electricity price · grid load
-        ↓
-03  Constraints     station capacity · charger power limit · EV availability window
-        ↓
-04  Optimization    multi-objective scheduling — balance renewable, carbon, cost, grid load
-        ↓
-05  Schedule        best window · hourly power slots · Green Score · cost · CO₂ estimate
-```
-
-> **DRIVER DEADLINE = HARD CONSTRAINT** — the schedule can shift charging but it will always reach the target SOC before departure.
+| `/login` | Real JWT auth via backend |
+| `/register` | Creates account via `POST /api/v1/auth/register` |
+| `/dashboard` | Live KPI cards (activeStations, energyToday, activeSessions, solarShare%, CO₂ saved) |
+| `/stations` | Leaflet map + live station list from API; summary counts from real data |
+| `/charging` | Vehicle + station selector → async optimisation → polling → Green Score + schedule chart |
+| `/fleet` | Fleet + departure + capacity inputs → fleet optimisation → polling → peak reduction metrics |
+| `/analytics` | Weekly energy charts, energy source pie, CO₂ bar chart, radial efficiency gauge |
+| `/settings` | Profile form, notification toggles, light/dark/system theme switcher |
 
 ---
 
@@ -283,24 +384,44 @@ Each service owns its own `.env`. Never put secrets from one service into anothe
 
 ```
 .env                ← Docker Compose only (Postgres creds, port mappings)
-backend/.env        ← Spring Boot (DB, JWT secret, CORS, mail)
+backend/.env        ← Spring Boot (DB, JWT secret, CORS, HTTP timeouts, async pool)
 frontend/.env       ← Vite (VITE_* API URLs, map config, token keys)
-optimization/.env   ← FastAPI (DB URL, internal API key, algorithm config)
+optimization/.env   ← FastAPI (DB URL, algorithm config, fallback rate)
 ```
+
+Key variables:
+
+| File | Variable | Description |
+|---|---|---|
+| `backend/.env` | `JWT_SECRET` | Min 32-char secret — generate with `openssl rand -hex 32` |
+| `backend/.env` | `OPTIMIZATION_SERVICE_URL` | FastAPI base URL (default: `http://localhost:8001`) |
+| `backend/.env` | `OPTIMIZATION_CONNECT_TIMEOUT_MS` | HTTP connect timeout to FastAPI (default: 5000) |
+| `backend/.env` | `OPTIMIZATION_READ_TIMEOUT_MS` | HTTP read timeout to FastAPI (default: 15000) |
+| `backend/.env` | `ASYNC_CORE_POOL_SIZE` | Optimizer thread pool core size (default: 4) |
+| `frontend/.env` | `VITE_API_BASE_URL` | Spring backend URL (default: `http://localhost:8080/api`) |
+| `optimization/.env` | `DATABASE_URL` | Async DSN for asyncpg (`postgresql+asyncpg://...`) |
 
 ---
 
-## What's Working vs In Progress
+## What's Complete
 
 | Area | Status |
 |---|---|
-| Frontend — all 7 pages | ✅ Complete |
-| Frontend — theme switching (light/dark/system) | ✅ Complete |
-| Database — schema, indexes, seed, views, triggers | ✅ Complete |
-| Backend — pom.xml, config, entities, repositories | ✅ Complete |
-| Backend — services, controllers, JWT security | ✅ Complete |
-| Optimization — FastAPI app, OR-Tools solver | 🔄 In progress |
-| Docker Compose — full stack | 🔄 In progress |
+| Database — 13 tables, indexes, views, triggers, seed data | ✅ |
+| Backend — all entities, repositories, services, controllers | ✅ |
+| Backend — JWT auth with refresh token rotation | ✅ |
+| Backend — async optimisation with FastAPI + built-in fallback | ✅ |
+| Backend — fleet optimisation service + controller | ✅ |
+| Backend — audit log (async, failure-safe) | ✅ |
+| Backend — RestTemplate timeouts | ✅ |
+| Backend — green score formula (0.7 × renewable + 0.3 × savings) | ✅ |
+| Optimization — FastAPI app, greedy solver, DB integration | ✅ |
+| Optimization — 10 unit tests passing | ✅ |
+| Frontend — real JWT login/register/logout | ✅ |
+| Frontend — token refresh interceptor | ✅ |
+| Frontend — live KPIs, stations, optimisation, fleet from API | ✅ |
+| Frontend — theme switching (light/dark/system) | ✅ |
+| Docker Compose — full stack | ✅ |
 
 ---
 
@@ -310,5 +431,5 @@ optimization/.env   ← FastAPI (DB URL, internal API key, algorithm config)
 
 ---
 
-*GreenCharge · HackOut '26 · EV Charging Network Renewable Optimization*  
+*GreenCharge · HackOut '26 · EV Charging Network Renewable Optimization*
 *From smarter charging decisions to smarter energy coordination.*
