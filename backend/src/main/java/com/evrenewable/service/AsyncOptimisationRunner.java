@@ -41,9 +41,23 @@ public class AsyncOptimisationRunner {
     @Async
     @Transactional
     public void run(UUID requestId, UUID actorId) {
-        OptimisationRequest optReq = optRepository.findByIdWithSlots(requestId).orElse(null);
+        // The parent transaction in OptimisationService.submit() may not have
+        // committed yet when this async thread starts. Retry up to 5 times
+        // with a short back-off before giving up.
+        OptimisationRequest optReq = null;
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            optReq = optRepository.findByIdWithSlots(requestId).orElse(null);
+            if (optReq != null) break;
+            try {
+                Thread.sleep(300L * attempt);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+
         if (optReq == null) {
-            log.error("Async optimisation: request {} not found", requestId);
+            log.error("Async optimisation: request {} not found after retries — giving up", requestId);
             return;
         }
 

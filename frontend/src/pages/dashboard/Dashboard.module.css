@@ -1,100 +1,87 @@
-.page { display: flex; flex-direction: column; gap: 1.6rem; }
+.page { display: flex; flex-direction: column; gap: 1.25rem; }
 
 .pageHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
-
 .heading {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 600;
   color: var(--color-text);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
-
 .subheading {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
-  margin-top: 0.2rem;
+  margin-top: 0.1rem;
 }
-
 .headerBadge {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  background: var(--color-accent-light);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.77rem;
-  font-weight: 600;
-  color: var(--color-accent);
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
-
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .liveDot {
   width: 6px; height: 6px;
   background: var(--color-accent);
   border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse 2.5s ease-in-out infinite;
   flex-shrink: 0;
 }
 
-/* KPI grid */
+/* KPI strip — horizontal not card grid */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.statCard {
-  background: var(--color-surface);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--color-border);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1.25rem 1.4rem;
-  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.statCard {
+  background: var(--color-surface);
+  padding: 1rem 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
-
 .statLabel {
-  font-size: 0.77rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
 .statValue {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 600;
   color: var(--color-text);
   letter-spacing: -0.03em;
   line-height: 1;
 }
-
 .statUnit {
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 400;
   margin-left: 2px;
   color: var(--color-text-muted);
 }
-
 .statChange {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.77rem;
+  gap: 0.2rem;
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
 }
-
-.upArrow   { color: #16a34a; font-weight: 700; }
-.downArrow { color: #e53e3e; font-weight: 700; }
-.changeGreen  { color: #16a34a; }
-.changeRed    { color: #e53e3e; }
+.upArrow   { color: var(--color-success, #15803d); }
+.downArrow { color: var(--color-danger); }
+.changeGreen  { color: var(--color-success, #15803d); }
+.changeRed    { color: var(--color-danger); }
 .changeMuted  { color: var(--color-text-muted); }
 
 /* charts */
@@ -103,123 +90,100 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
-@media (max-width: 900px) { .chartsRow { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .chartsRow { grid-template-columns: 1fr; } }
 
 .chartCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1.4rem;
-  box-shadow: var(--shadow-sm);
+  padding: 1.15rem 1.25rem;
 }
-
 .chartHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
   gap: 0.5rem;
 }
-
 .chartTitle {
-  font-size: 0.93rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--color-text);
 }
-
 .chartSub {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   color: var(--color-text-muted);
-  margin-top: 0.15rem;
+  margin-top: 0.1rem;
 }
-
 .chartBadge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  background: var(--color-accent-light);
-  color: var(--color-accent);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-xs);
+  padding: 0.15rem 0.5rem;
   white-space: nowrap;
+  background: var(--color-bg);
 }
 
 .tooltip {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.76rem;
   box-shadow: var(--shadow);
-  font-size: 0.8rem;
 }
+.tooltipLabel { font-weight: 600; color: var(--color-text); margin-bottom: 0.25rem; }
+.tooltipRow { display: flex; justify-content: space-between; gap: 1rem; }
 
-.tooltipLabel {
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 0.3rem;
-}
-
-.tooltipRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.77rem;
-}
-
-/* activity */
+/* activity — compact table-like list */
 .activityCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1.4rem;
-  box-shadow: var(--shadow-sm);
+  padding: 1.15rem 1.25rem;
 }
-
 .activityList {
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  margin-top: 0.85rem;
+  margin-top: 0.75rem;
 }
-
 .activityItem {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.65rem 0;
-  border-bottom: 1px solid var(--color-border);
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border-light, var(--color-border));
 }
 .activityItem:last-child { border-bottom: none; }
-
 .activityDot {
-  width: 30px; height: 30px;
-  border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
+  width: 6px; height: 6px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
-
 .activityBody {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
 }
-
 .activityLabel {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-text);
+  white-space: nowrap;
 }
-
 .activityText {
-  font-size: 0.77rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
 .activityTime {
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   color: var(--color-text-faint);
   white-space: nowrap;
+  flex-shrink: 0;
 }

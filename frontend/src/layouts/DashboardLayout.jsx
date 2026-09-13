@@ -1,85 +1,83 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import styles from './DashboardLayout.module.css'
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard',      section: null },
-  { to: '/stations',  label: 'Stations',        section: null },
-  { to: '/charging',  label: 'Charge Request',  section: 'GreenCharge' },
-  { to: '/fleet',     label: 'Fleet',           section: null },
-  { to: '/analytics', label: 'Analytics',       section: 'Insights' },
-  { to: '/settings',  label: 'Settings',        section: null },
+  { to: '/dashboard', label: 'Overview'       },
+  { to: '/stations',  label: 'Stations'        },
+  { to: '/charging',  label: 'Charge Request'  },
+  { to: '/fleet',     label: 'Fleet'           },
+  { to: '/analytics', label: 'Analytics'       },
+  { to: '/settings',  label: 'Settings'        },
 ]
+
+const PAGE_TITLES = {
+  '/dashboard': 'Overview',
+  '/stations':  'Stations',
+  '/charging':  'Charge Request',
+  '/fleet':     'Fleet Optimisation',
+  '/analytics': 'Analytics',
+  '/settings':  'Settings',
+}
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
 
   const handleLogout = () => { logout(); navigate('/login') }
 
-  const initials = (user?.name || 'A')
+  const initials = (user?.name || 'U')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+
+  const pageTitle = PAGE_TITLES[location.pathname] || 'GreenCharge'
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        {/* brand */}
         <div className={styles.brand}>
           <div className={styles.brandIcon}>GC</div>
-          <div className={styles.brandText}>
-            <span className={styles.brandName}>GreenCharge</span>
-            <span className={styles.brandTag}>Platform</span>
-          </div>
+          <span className={styles.brandName}>GreenCharge</span>
         </div>
 
-        {/* nav */}
         <nav className={styles.nav}>
-          {NAV.map(({ to, label, section }) => (
-            <div key={to}>
-              {section && (
-                <span className={styles.navSection}>{section}</span>
-              )}
-              <NavLink
-                to={to}
-                className={({ isActive }) =>
-                  `${styles.navItem} ${isActive ? styles.active : ''}`
-                }
-              >
-                <span className={styles.navLabel}>{label}</span>
-              </NavLink>
-            </div>
+          {NAV.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
+              {label}
+            </NavLink>
           ))}
         </nav>
 
-        {/* user */}
         <div className={styles.userSection}>
           <div className={styles.avatar}>{initials}</div>
           <div className={styles.userInfo}>
-            <span className={styles.userName}>{user?.name || 'Admin'}</span>
-            <span className={styles.userRole}>{user?.role || 'Administrator'}</span>
+            <span className={styles.userName}>{user?.name || 'User'}</span>
+            <span className={styles.userRole}>{user?.role || 'DRIVER'}</span>
           </div>
           <button
             className={styles.logoutBtn}
             onClick={handleLogout}
-            title="Logout"
-            aria-label="Logout"
+            title="Sign out"
+            aria-label="Sign out"
           >
-            Out
+            ↪
           </button>
         </div>
       </aside>
 
-      {/* topbar + content */}
       <div className={styles.body}>
         <header className={styles.topbar}>
-          <span className={styles.topbarGreeting}>
-            Good {getTimeOfDay()}, <strong>{user?.name || 'Admin'}</strong>
-          </span>
+          <div className={styles.topbarLeft}>
+            <span className={styles.liveDot} aria-hidden="true" />
+            <span className={styles.topbarTitle}>{pageTitle}</span>
+          </div>
           <div className={styles.topbarRight}>
-            <div className={styles.liveChip}>
-              <span className={styles.liveDot} />
-              Live
-            </div>
             <span className={styles.topbarDate}>{formatDate()}</span>
           </div>
         </header>
@@ -91,15 +89,8 @@ export default function DashboardLayout() {
   )
 }
 
-function getTimeOfDay() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
-
 function formatDate() {
   return new Date().toLocaleDateString('en-IN', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    day: 'numeric', month: 'short', year: 'numeric',
   })
 }

@@ -120,8 +120,8 @@ export default function Fleet() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.heading}>Fleet Optimisation</h1>
-          <p className={styles.sub}>Coordinate your fleet — same requirements, smarter timing</p>
+          <h1 className={styles.heading}>Fleet optimisation</h1>
+          <p className={styles.sub}>Coordinate charging across the fleet — stay within station capacity, maximise renewable share</p>
         </div>
         <button className={styles.runBtn} onClick={handleOptimise} disabled={loading}>
           {loading

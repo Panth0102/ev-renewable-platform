@@ -137,10 +137,11 @@ export default function ChargingRequest() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.heading}>Charging Request</h1>
-          <p className={styles.sub}>Submit your EV details and get an optimised charging schedule</p>
+          <h1 className={styles.heading}>Charge request</h1>
+          <p className={styles.sub}>
+            Enter vehicle state and departure time to get an optimised charging schedule
+          </p>
         </div>
-        <span className={styles.badge}>🤖 AI Optimised</span>
       </div>
 
       <div className={styles.layout}>
@@ -149,9 +150,7 @@ export default function ChargingRequest() {
 
           {/* Vehicle selector */}
           <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.sectionNum}>00</span> Vehicle
-            </h2>
+            <h2 className={styles.sectionTitle}>Vehicle</h2>
             <div className={styles.field}>
               <label>Select vehicle</label>
               <select value={form.vehicleId} onChange={e => {
@@ -184,9 +183,7 @@ export default function ChargingRequest() {
 
           {/* SOC */}
           <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.sectionNum}>01</span> EV State
-            </h2>
+            <h2 className={styles.sectionTitle}>State of charge</h2>
             <div className={styles.fieldRow}>
               <div className={styles.field}>
                 <label>Current SOC (%)</label>
@@ -219,9 +216,7 @@ export default function ChargingRequest() {
 
           {/* Vehicle & Charger */}
           <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.sectionNum}>02</span> Vehicle &amp; Charger
-            </h2>
+            <h2 className={styles.sectionTitle}>Vehicle &amp; charger</h2>
             <div className={styles.fieldRow}>
               <div className={styles.field}>
                 <label>Battery Capacity (kWh)</label>
@@ -238,9 +233,7 @@ export default function ChargingRequest() {
 
           {/* Departure */}
           <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.sectionNum}>03</span> Departure
-            </h2>
+            <h2 className={styles.sectionTitle}>Departure</h2>
             <div className={styles.field}>
               <label>Departure date &amp; time</label>
               <input

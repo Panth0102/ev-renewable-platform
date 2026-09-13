@@ -61,18 +61,18 @@ export default function Dashboard() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.heading}>Overview</h1>
-          <p className={styles.subheading}>Live snapshot of your EV and renewable energy network</p>
+          <h1 className={styles.heading}>Charging network overview</h1>
+          <p className={styles.subheading}>Live data — stations, sessions, energy and renewable share</p>
         </div>
         <div className={styles.headerBadge}>
           <span className={styles.liveDot} />
-          {loading ? 'Loading…' : error ? 'Backend offline' : 'All systems operational'}
+          {loading ? 'Loading' : error ? 'Backend offline' : 'Live'}
         </div>
       </div>
 
       {/* KPI cards */}
-      {loading && <p className={styles.loadingHint}>Fetching live KPIs…</p>}
-      {error   && <p className={styles.errorHint}>Could not load KPIs: {error}</p>}
+      {loading && <p className={styles.loadingHint}>Loading…</p>}
+      {error   && <p className={styles.errorHint}>KPIs unavailable: {error}</p>}
 
       {!loading && !error && (
         <div className={styles.statsGrid}>
@@ -157,21 +157,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* recent activity */}
+      {/* recent activity — compact */}
       <div className={styles.activityCard}>
-        <h2 className={styles.chartTitle}>Recent Activity</h2>
+        <h2 className={styles.chartTitle}>Recent activity</h2>
         <ul className={styles.activityList}>
           {[
-            { label: 'Station Alpha',  text: 'New session started',              time: '2 min ago',  color: '#18B96B' },
-            { label: 'Solar',          text: 'Generation peaked at 95 kW',        time: '18 min ago', color: '#d97706' },
-            { label: 'Station Delta',  text: 'Session completed (42 kWh)',        time: '34 min ago', color: '#0284c7' },
-            { label: 'Station Gamma',  text: 'Offline (maintenance)',             time: '1 hr ago',   color: '#e53e3e' },
-            { label: 'Grid export',    text: '120 kWh surplus returned to grid',  time: '2 hr ago',   color: '#16a34a' },
+            { label: 'Station Alpha',  text: 'New session started',             time: '2 min ago',  color: '#16a869' },
+            { label: 'Solar',          text: 'Generation peaked at 95 kW',       time: '18 min ago', color: '#d97706' },
+            { label: 'Station Delta',  text: 'Session completed — 42 kWh',       time: '34 min ago', color: '#0369a1' },
+            { label: 'Station Gamma',  text: 'Offline — maintenance',            time: '1 hr ago',   color: '#dc2626' },
+            { label: 'Grid',           text: '120 kWh surplus returned to grid', time: '2 hr ago',   color: '#15803d' },
           ].map((a, i) => (
             <li key={i} className={styles.activityItem}>
-              <span className={styles.activityDot} style={{ background: a.color + '18', color: a.color }}>
-                {a.label[0]}
-              </span>
+              <span className={styles.activityDot} style={{ background: a.color }} />
               <div className={styles.activityBody}>
                 <span className={styles.activityLabel}>{a.label}</span>
                 <span className={styles.activityText}>{a.text}</span>

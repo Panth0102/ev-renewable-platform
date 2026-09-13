@@ -2,8 +2,6 @@ import { Outlet, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import styles from './AuthLayout.module.css'
 
-const TAGS = ['Solar Powered', 'Smart Routing', 'Real-time Analytics', 'Fleet Ready']
-
 export default function AuthLayout() {
   const { isAuthenticated } = useAuth()
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
@@ -19,33 +17,23 @@ export default function AuthLayout() {
 
         <div className={styles.heroText}>
           <h1 className={styles.heroTitle}>
-            Smarter EV charging,<br />less grid stress.
+            EV charging that follows the sun.
           </h1>
           <p className={styles.heroSub}>
-            GreenCharge schedules EV charging around renewable availability,
-            grid conditions, and driver departure times.
+            Schedules charging around renewable availability,
+            grid conditions, and departure times — so vehicles
+            charge greener without missing their window.
           </p>
           <div className={styles.tagRow}>
-            {TAGS.map(t => <span key={t} className={styles.tag}>{t}</span>)}
+            {['Renewable-aware', 'Fleet scheduling', 'Grid-friendly', 'Real-time'].map(t => (
+              <span key={t} className={styles.tag}>{t}</span>
+            ))}
           </div>
         </div>
 
-        <div className={styles.statStrip}>
-          <div className={styles.stripStat}>
-            <span className={styles.stripVal}>12</span>
-            <span className={styles.stripLabel}>Active Stations</span>
-          </div>
-          <div className={styles.stripDivider} />
-          <div className={styles.stripStat}>
-            <span className={styles.stripVal}>68%</span>
-            <span className={styles.stripLabel}>Solar Usage</span>
-          </div>
-          <div className={styles.stripDivider} />
-          <div className={styles.stripStat}>
-            <span className={styles.stripVal}>1.2 MW</span>
-            <span className={styles.stripLabel}>Delivered Today</span>
-          </div>
-        </div>
+        <p className={styles.caption}>
+          GreenCharge Platform · HackOut 2026
+        </p>
       </div>
 
       {/* Right panel */}

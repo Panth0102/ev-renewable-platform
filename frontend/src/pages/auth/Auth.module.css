@@ -1,78 +1,47 @@
 .wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
 .heading {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin-bottom: 0.35rem;
-}
-
-.sub {
-  font-size: 0.88rem;
-  color: var(--color-text-muted);
-  margin-bottom: 1.5rem;
-}
-
-/* hint banner */
-.hintBanner {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: var(--color-accent-light);
-  border: 1px solid #b6e8cc;
-  border-radius: var(--radius);
-  padding: 0.6rem 0.85rem;
-  margin-bottom: 1.25rem;
-}
-
-.hintTitle {
-  font-size: 0.82rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
 }
-
-.hintText {
+.sub {
   font-size: 0.82rem;
   color: var(--color-text-muted);
+  margin-bottom: 1.75rem;
 }
 
 /* error */
 .error {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #fff5f5;
+  background: var(--color-danger-bg);
   color: var(--color-danger);
   border: 1px solid #fecaca;
-  border-radius: var(--radius);
-  padding: 0.6rem 0.85rem;
-  font-size: 0.84rem;
-  margin-bottom: 1rem;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.85rem;
 }
 
 /* form */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.9rem;
   margin-bottom: 1.25rem;
 }
-
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
 }
-
 .field label {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.77rem;
+  font-weight: 500;
   color: var(--color-text-muted);
 }
 
@@ -81,79 +50,67 @@
   display: flex;
   align-items: center;
 }
-
 .inputWrap input {
   width: 100%;
-  padding: 0.65rem 2.5rem 0.65rem 0.9rem;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.92rem;
+  padding: 0.6rem 2.4rem 0.6rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
   font-family: inherit;
   background: var(--color-surface);
   color: var(--color-text);
-  transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
 }
-
 .inputWrap input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(24,185,107,0.12);
+  box-shadow: 0 0 0 3px rgba(22,168,105,0.1);
 }
-
 .inputWrap input::placeholder { color: var(--color-text-faint); }
 
 .eyeBtn {
   position: absolute;
-  right: 0.75rem;
+  right: 0.7rem;
   background: none;
   border: none;
   padding: 0.2rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--color-text-faint);
-  line-height: 1;
-  transition: color 0.15s;
+  transition: color 0.12s;
 }
 .eyeBtn:hover { color: var(--color-text-muted); }
 
-/* submit button */
+/* submit */
 .btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   background: var(--color-accent);
   color: #fff;
   border: none;
-  border-radius: var(--radius);
-  padding: 0.72rem 1rem;
-  font-size: 0.93rem;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  transition: background 0.15s;
-  margin-top: 0.25rem;
+  transition: background 0.12s;
+  margin-top: 0.15rem;
 }
-
-.btn:hover:not(:disabled) {
-  background: var(--color-accent-hover);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btn:hover:not(:disabled) { background: var(--color-accent-hover); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinner {
   display: inline-block;
-  width: 13px;
-  height: 13px;
-  border: 2px solid rgba(255,255,255,0.4);
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,0.35);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.65s linear infinite;
 }
 
 .switch {
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   text-align: center;
 }

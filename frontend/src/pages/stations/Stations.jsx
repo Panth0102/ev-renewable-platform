@@ -32,20 +32,20 @@ export default function Stations() {
   ]
 
   const summary = [
-    { label: 'Total Stations', value: stations.length,                                    icon: '⚡' },
-    { label: 'Online',         value: stations.filter(s => s.status === 'ACTIVE').length, icon: '✓'  },
-    { label: 'Chargers',       value: stations.reduce((n, s) => n + (s.chargers?.length ?? 0), 0), icon: '🔌' },
-    { label: 'Total Capacity', value: `${stations.reduce((n, s) => n + (parseFloat(s.totalCapacityKw) || 0), 0).toFixed(0)} kW`, icon: '☀' },
+    { label: 'Total stations', value: stations.length,                                    icon: null },
+    { label: 'Active',         value: stations.filter(s => s.status === 'ACTIVE').length, icon: null },
+    { label: 'Chargers',       value: stations.reduce((n, s) => n + (s.chargers?.length ?? 0), 0), icon: null },
+    { label: 'Total capacity', value: `${stations.reduce((n, s) => n + (parseFloat(s.totalCapacityKw) || 0), 0).toFixed(0)} kW`, icon: null },
   ]
 
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.heading}>EV Stations</h1>
-          <p className={styles.sub}>Manage and monitor all charging locations</p>
+          <h1 className={styles.heading}>Charging stations</h1>
+          <p className={styles.sub}>Network status and station overview</p>
         </div>
-        <button className={styles.addBtn}>+ Add Station</button>
+        <button className={styles.addBtn}>+ Add station</button>
       </div>
 
       {loading && <p className={styles.hint}>Loading stations…</p>}
@@ -55,7 +55,6 @@ export default function Stations() {
       <div className={styles.summaryRow}>
         {summary.map(s => (
           <div key={s.label} className={styles.summaryCard}>
-            <span className={styles.summaryIcon}>{s.icon}</span>
             <div>
               <div className={styles.summaryVal}>{s.value}</div>
               <div className={styles.summaryLabel}>{s.label}</div>
