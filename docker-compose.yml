@@ -58,7 +58,7 @@ services:
       optimization:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE:         prod
+      SPRING_PROFILES_ACTIVE:         dev
       DB_HOST:                        db
       DB_PORT:                        5432
       DB_NAME:                        ${POSTGRES_DB:-ev_renewable_db}
